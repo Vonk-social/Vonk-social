@@ -83,7 +83,7 @@
 </svelte:head>
 
 {#if stage === 'capture'}
-	<div class="h-screen">
+	<div class="h-dvh">
 		<CameraCapture {onCapture} />
 	</div>
 {:else}
