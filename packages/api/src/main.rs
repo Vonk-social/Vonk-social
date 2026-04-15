@@ -21,6 +21,7 @@ mod config;
 mod db;
 mod error;
 mod feed;
+mod jobs;
 mod media;
 mod models;
 mod routes;
@@ -82,6 +83,10 @@ async fn main() -> anyhow::Result<()> {
     // Database + migrations.
     let db = db::connect_and_migrate(&cfg.database_url).await?;
     tracing::info!("database connected, migrations up-to-date");
+
+    // Background: null out `sessions.ip_hash` older than 48h every 15 min
+    // (CLAUDE.md §9).
+    jobs::ip_sweep::spawn(db.clone());
 
     // Valkey (Redis-compatible).
     let redis_client = redis::Client::open(cfg.redis_url.as_str())?;
