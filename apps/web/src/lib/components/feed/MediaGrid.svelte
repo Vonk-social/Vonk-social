@@ -42,7 +42,7 @@
 					alt={m.alt_text ?? ''}
 					class="h-full w-full object-cover"
 					loading="lazy"
-					style="background-color: #e9dfd1"
+					decoding="async"
 				/>
 			</button>
 		{/each}
