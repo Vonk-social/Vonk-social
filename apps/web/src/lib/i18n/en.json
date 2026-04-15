@@ -1,0 +1,46 @@
+{
+	"landing.hero.title": "Social, without the price tag.",
+	"landing.hero.subtitle": "No ads. No tracking. No algorithm selling your attention. Vonk is social as it was meant to be — for everyone, across Europe.",
+	"landing.cta.login": "Sign in with Google",
+	"landing.cta.learn": "Why Vonk",
+	"landing.badge": "Made in Europe 🇪🇺",
+
+	"login.title": "Welcome to Vonk",
+	"login.subtitle": "Sign in with an account you already have. No passwords to remember, no spam.",
+	"login.google": "Sign in with Google",
+	"login.more_providers": "Apple and GitHub are coming.",
+
+	"onboarding.title": "Let's set up your profile",
+	"onboarding.step_username": "Pick a username",
+	"onboarding.step_avatar": "A photo?",
+	"onboarding.step_friends": "Find your friends",
+	"onboarding.step_of": "Step {current} of {total}",
+
+	"username.label": "Username",
+	"username.help": "3–30 characters — letters, digits, underscore.",
+	"username.available": "Available ✓",
+	"username.taken": "Already taken",
+	"username.invalid": "Only a–z, 0–9 and _ (underscore) allowed",
+	"username.reserved": "This prefix is reserved",
+	"username.continue": "Next — pick a photo",
+
+	"avatar.title": "Show yourself",
+	"avatar.help": "A photo of your face, or anything really. We strip EXIF metadata (like GPS coordinates) before storing it.",
+	"avatar.choose": "Choose photo",
+	"avatar.change": "Choose a different photo",
+	"avatar.uploading": "Uploading…",
+	"avatar.skip": "Skip for now",
+	"avatar.continue": "Next — find friends",
+
+	"friends.title": "Your first contacts",
+	"friends.help": "On Vonk you follow the people you actually want to follow — never what an algorithm dictates. Full search and 'people you may know' arrive later this summer.",
+	"friends.done": "Let's go",
+
+	"home.welcome": "Welcome, {name}!",
+	"home.empty": "Your feed is empty for now. Phase 2 is on the way: posting, following, stories.",
+	"home.logout": "Sign out",
+
+	"error.generic": "Something went wrong. Please try again.",
+	"error.unauthenticated": "Your session expired. Please sign in again.",
+	"error.google_not_configured": "Google login is not yet configured on the server."
+}

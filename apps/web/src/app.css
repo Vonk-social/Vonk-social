@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/nunito/index.css';
+
+/*
+ * Design system — "warm, playful, human" per CLAUDE.md §Tech Stack Details.
+ * Tailwind v4 uses CSS custom properties declared in @theme to generate
+ * utility classes (bg-cream, text-terracotta, …) — no separate config file.
+ */
+@theme {
+	--color-cream: #fff8f0;
+	--color-terracotta: #c2593a;
+	--color-terracotta-light: #d97757;
+	--color-terracotta-dark: #9e4328;
+	--color-amber: #e5951b;
+	--color-sage: #7a9e7e;
+	--color-ink: #2d1f14;
+	--color-muted: #8a7766;
+	--color-border: #e9dfd1;
+
+	--font-sans: 'Nunito Variable', ui-sans-serif, system-ui, sans-serif;
+	--font-display: 'Nunito Variable', ui-sans-serif, system-ui, sans-serif;
+
+	--radius-card: 1.25rem;      /* 20px */
+	--radius-lg: 1rem;           /* 16px */
+	--radius-button: 9999px;     /* pill */
+}
+
+html,
+body {
+	font-family: var(--font-sans);
+	font-feature-settings: 'ss01', 'ss02';
+}
+
+/* Scrollbar styling for a less corporate feel */
+html {
+	scrollbar-color: var(--color-terracotta) var(--color-cream);
+}
+
+/* Focus-visible: thick terracotta ring on all interactive elements. */
+:focus-visible {
+	outline: 2px solid var(--color-terracotta);
+	outline-offset: 3px;
+	border-radius: 0.5rem;
+}
+
+/* Utility: chunky "card" aesthetic used across onboarding + profile */
+.vonk-card {
+	background: #fff;
+	border-radius: var(--radius-card);
+	border: 1px solid var(--color-border);
+	padding: 2rem;
+	box-shadow: 0 1px 0 0 rgb(45 31 20 / 0.03), 0 8px 24px -12px rgb(45 31 20 / 0.1);
+}

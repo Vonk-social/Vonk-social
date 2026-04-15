@@ -1,0 +1,46 @@
+{
+	"landing.hero.title": "Sociaal, zonder de prijs.",
+	"landing.hero.subtitle": "Geen advertenties. Geen tracking. Geen algoritme dat je aandacht verkoopt. Vonk is sociaal zoals het bedoeld was — voor iedereen, in heel Europa.",
+	"landing.cta.login": "Aanmelden met Google",
+	"landing.cta.learn": "Lees waarom",
+	"landing.badge": "Gemaakt in Europa 🇪🇺",
+
+	"login.title": "Welkom bij Vonk",
+	"login.subtitle": "Meld je aan met je bestaande account. Geen wachtwoorden om te onthouden, geen spam.",
+	"login.google": "Aanmelden met Google",
+	"login.more_providers": "Apple en GitHub volgen later.",
+
+	"onboarding.title": "Even je profiel klaarzetten",
+	"onboarding.step_username": "Kies je gebruikersnaam",
+	"onboarding.step_avatar": "Een foto?",
+	"onboarding.step_friends": "Vind je vrienden",
+	"onboarding.step_of": "Stap {current} van {total}",
+
+	"username.label": "Gebruikersnaam",
+	"username.help": "3–30 tekens, letters, cijfers en underscore.",
+	"username.available": "Beschikbaar ✓",
+	"username.taken": "Deze is al bezet",
+	"username.invalid": "Alleen a–z, 0–9 en _ (underscore)",
+	"username.reserved": "Deze prefix is gereserveerd",
+	"username.continue": "Door naar de foto",
+
+	"avatar.title": "Laat jezelf zien",
+	"avatar.help": "Een foto van je gezicht of wat je ook maar wil. We halen automatisch EXIF-data (zoals GPS-coördinaten) eruit voor we hem opslaan.",
+	"avatar.choose": "Foto kiezen",
+	"avatar.change": "Andere foto",
+	"avatar.uploading": "Aan het uploaden…",
+	"avatar.skip": "Later doen",
+	"avatar.continue": "Door naar vrienden",
+
+	"friends.title": "Je eerste contacten",
+	"friends.help": "In Vonk volg je mensen die je wil volgen — nooit wat een algoritme je voorschrijft. Later in de zomer komt de volledige zoek- en 'misschien ken je'-functie online.",
+	"friends.done": "Aan de slag",
+
+	"home.welcome": "Welkom, {name}!",
+	"home.empty": "Je feed is nog leeg. Phase 2 is onderweg: posten, volgen, stories.",
+	"home.logout": "Afmelden",
+
+	"error.generic": "Er ging iets mis. Probeer het opnieuw.",
+	"error.unauthenticated": "Je sessie is verlopen. Meld je opnieuw aan.",
+	"error.google_not_configured": "Google login is nog niet ingesteld op de server."
+}

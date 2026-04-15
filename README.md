@@ -174,7 +174,7 @@ We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before 
 
 ## Governance
 
-Vonk is operated by **VZW Vonk**, a Belgian non-profit (vereniging zonder winstoogmerk). There are no shareholders, no investors, and no profit distribution.
+Vonk is operated by **VZW Vonk**, a European non-profit association (vereniging zonder winstoogmerk — a Belgian legal form). There are no shareholders, no investors, and no profit distribution.
 
 Major features are proposed as RFCs and discussed publicly. The community votes on charity fund distribution annually.
 
@@ -185,5 +185,5 @@ Major features are proposed as RFCs and discussed publicly. The community votes 
 ---
 
 <p align="center">
-  <sub>Made with ♥ in Belgium. Vonk is for everyone.</sub>
+  <sub>Made with ♥ in Europe 🇪🇺 — for everyone, everywhere.</sub>
 </p>
