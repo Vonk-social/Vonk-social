@@ -1,22 +1,23 @@
 <p align="center">
-  <img src="docs/assets/vonk-logo.svg" alt="Vonk" width="80" />
+  <img src="apps/web/static/icons/vonk-icon.svg" alt="Vonk" width="96" />
 </p>
 
 <h1 align="center">Vonk</h1>
 
 <p align="center">
-  <strong>Sociaal, zonder de prijs.</strong><br />
+  <strong>Social media, maar dan voor mensen ✌️</strong><br />
   An open-source social platform where you are not the product.
 </p>
 
 <p align="center">
-  <a href="https://vonk.social">Website</a> ·
-  <a href="https://vonk.social/open">Open Finances</a> ·
+  <a href="https://vonk.openview.be">Staging (alpha)</a> ·
+  <a href="#roadmap">Roadmap</a> ·
   <a href="#contributing">Contribute</a> ·
   <a href="https://github.com/sponsors/vonk-social">Donate</a>
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/status-alpha-orange" alt="Alpha" />
   <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License" />
   <img src="https://img.shields.io/badge/made_in-Europe_🇪🇺-green" alt="Made in Europe" />
   <img src="https://img.shields.io/badge/ads-never-red" alt="No Ads" />
@@ -26,161 +27,268 @@
 
 ## What is Vonk?
 
-Vonk (Dutch: *spark*) is a social platform that combines the best of Facebook, Instagram, and TikTok — without the exploitation.
+Vonk (Dutch: *spark*) is a social platform that aims to combine the useful
+parts of Facebook, Instagram, Twitter and Snapchat — without the
+exploitation. It's **alpha software** right now; the core loop works
+end-to-end but many features are still under construction. See
+[Roadmap](#roadmap) for exactly where things stand.
 
 **Three non-negotiable rules:**
 
 1. **No advertisements.** Ever. Nowhere. No "promoted posts", no "sponsored content".
 2. **No data sales.** Your data never leaves the platform. No third parties, no analytics partnerships.
-3. **No algorithmic manipulation.** The only suggestions are *people you may know* based on mutual connections. Your feed is chronological.
+3. **No algorithmic manipulation.** The feed is strictly reverse-chronological. The only suggestions are *people you may know* based on mutual connections — never content-based.
+
+The full list of architectural guardrails is in [CLAUDE.md §Non-Negotiable Rules](CLAUDE.md).
 
 ## How is Vonk funded?
 
 Vonk runs on donations. That's it.
 
 - [GitHub Sponsors](https://github.com/sponsors/vonk-social)
-- [Buy Me a Coffee](https://buymeacoffee.com/vonk)
-- Optional in-app donation (€1/€3/€5)
+- Optional in-app donation (€1/€3/€5) — not built yet
 
-**Every euro is publicly tracked** at [vonk.social/open](https://vonk.social/open). Hosting costs are covered first. Everything left over is **donated annually to charities** focused on world peace and health. The community votes on which organisations receive funding.
+**Every euro will be publicly tracked** at `/open` (endpoint scaffolded,
+live data coming with Phase 4). Hosting costs are covered first.
+Everything left over is **donated annually to charities** focused on
+world peace and health. The community votes on which organisations
+receive funding.
 
-## Features
+## Live staging
+
+Alpha-testable at **https://vonk.openview.be**. Google sign-in, seeded
+with a handful of placeholder accounts so the feed and discover pages
+have content to render against. Expect breaking changes; the database
+may be wiped between phases.
+
+## Feature matrix
+
+Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · 📋 planned · ⏸ later phase
+
+### Phase 1 — Auth & Users ✅
 
 | Feature | Status |
 |---|---|
-| Text + image posts | 🔨 Building |
-| Chronological feed | 🔨 Building |
-| SSO login (Google, Apple, GitHub) | 🔨 Building |
-| E2EE direct messages | 📋 Planned |
-| Stories (24h) | 📋 Planned |
-| Short video (60s) | 📋 Planned |
-| Groups | 📋 Planned |
-| Events | 📋 Planned |
-| PWA (installable mobile web app) | 📋 Planned |
-| Native iOS + Android app | 📋 Planned |
-| ActivityPub federation | 📋 Planned |
-| itsme / EU eID login | 📋 Planned |
+| Google OAuth 2.0 / OIDC sign-in | ✅ |
+| JWT access (15 min) + opaque session refresh (30 d) in httpOnly cookies | ✅ |
+| User profiles (display name, bio, location, avatar, locale) | ✅ |
+| Onboarding wizard (username → avatar → friends) | ✅ |
+| Avatar upload (EXIF-strip → 3 WebP variants → MinIO) | ✅ |
+| Apple sign-in | 📋 |
+| GitHub sign-in | 📋 |
+| itsme / EU eID sign-in | ⏸ |
 
-## Privacy by Design
+### Phase 2 — Posts, feed, social graph 🧪
 
-- **E2EE messages**: The server cannot read your conversations (MLS protocol)
-- **EXIF stripping**: All photo metadata (GPS, camera info) is removed before storage
-- **IP retention**: IP addresses are deleted after 48 hours
-- **No tracking**: No cookies, no fingerprinting, no analytics
-- **Data export**: Full GDPR export in one click
-- **Account deletion**: Real deletion, not a 30-day soft delete
-- **Open source**: Every line of code is public. Verify it yourself.
+| Feature | Status |
+|---|---|
+| Text + image posts (up to 4 images per post) | ✅ |
+| Chronological feed with cursor pagination | ✅ |
+| Post visibility: public / followers / mentioned | ✅ |
+| @mention autocomplete in composer | ✅ |
+| #hashtag autocomplete (90-day corpus scan) | ✅ |
+| Likes (private count — only author sees it, per privacy rule #7) | ✅ |
+| Inline replies (no page navigation), one-shot composer | ✅ |
+| Public profiles with follow button + followers/following lists | ✅ |
+| Follow system (public + pending approval for private accounts) | ✅ |
+| Stories (24h, tray view, viewer with keyboard / tap-to-skip) | ✅ |
+| Snaps (view-once / view-24h ephemeral 1-to-1 media) | ✅ |
+| User search + "people you may know" (mutual-follows) | ✅ |
+| Bookmarks (private, server-side) | 🟡 backend only |
+| Reposts + quote-reposts | 🟡 backend only |
+| Pinned posts on profile (max 3) | 🟡 backend only |
+| Author stats dashboard (likes/replies/bookmarks/reposts — no impressions) | 🟡 backend only |
+| Story viewer list (author-only) | 🟡 backend only |
 
-## Tech Stack
+### Phase 3 — E2EE, mobile, friend import ⏸
+
+| Feature | Status |
+|---|---|
+| End-to-end-encrypted DMs (MLS protocol) — currently plaintext placeholder | 📋 |
+| Capacitor-wrapped iOS + Android apps | 📋 |
+| Native camera + AR filters / lenses | 📋 |
+| Import-contacts wizard (email invites + contact hash-match + deep-link intents) | 📋 |
+| Push notifications (web push + APNs/FCM) | 📋 |
+| Refresh-token rotation + reuse detection | 📋 |
+| 48h `sessions.ip_hash` sweep cron | 📋 |
+
+### Phase 4+ — Content & growth ⏸
+
+| Feature | Status |
+|---|---|
+| Public financial dashboard (`/api/open/*`) | 📋 |
+| Waitlist endpoint | 📋 |
+| Short video posts (ffmpeg transcode) | ⏸ |
+| Snap Map (opt-in location) | ⏸ |
+| Streaks, Memories, Bitmoji-style avatars | ⏸ |
+| Groups | ⏸ |
+| Events | ⏸ |
+| ActivityPub federation | ⏸ |
+| Admin moderation dashboard (`apps/admin/`) | ⏸ |
+
+### Cross-cutting ✅
+
+| Feature | Status |
+|---|---|
+| Dark + light mode (warm-dark palette, OS-aware) | ✅ |
+| Instagram-style bottom nav (Home / Zoek / 📷 / Snaps / Profiel) | ✅ |
+| 15 European languages on the landing (NL + EN native, others translated-for-review) | ✅ |
+| Accept-Language auto-detect with cookie override | ✅ |
+| Privacy-preserving IP hashing (rotating day salt) | ✅ |
+| EXIF stripping on every upload | ✅ |
+| Rate limiting (nginx-based currently; Valkey tower layer planned) | 🧪 |
+
+## Privacy by design
+
+- **EXIF stripping** on every upload — decode → re-encode path, never pass through
+- **IP retention** — stored as `sha256(ip || salt || day)`; 48-hour sweep cron is queued for Phase 3
+- **No tracking** — no cookies beyond auth, no fingerprinting, no analytics (Plausible, GA or otherwise)
+- **Private like counts** — the JSON response literally does not contain `like_count` for non-authors (`#[serde(skip_serializing_if)]`), so the UI *cannot* leak it
+- **E2EE DMs** — MLS protocol, landing in Phase 3. Schema already uses a `ciphertext BYTEA` column so the switchover is a drop-in; current plaintext is a documented placeholder
+- **Data export + real delete** — GDPR-compliant, planned for Phase 3
+- **Open source** — AGPL-3.0, every commit is public on GitHub
+
+## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | SvelteKit (SSR + SPA) |
-| Backend | Rust (Axum) |
-| Database | PostgreSQL 16 (→ Citus for scaling) |
-| Cache | Valkey (open-source Redis) |
-| Object Storage | MinIO (S3-compatible) |
-| E2EE | MLS protocol (libsignal) |
-| CDN | Bunny.net (EU-based) |
+| Frontend | SvelteKit 5 + Svelte 5 runes, Tailwind 4, adapter-node |
+| Backend | Rust 1.94 + Axum 0.8 + Tokio |
+| Database | PostgreSQL 16 + SQLx (runtime-checked queries) |
+| Cache / state | Valkey 8 (Redis-compatible, open-source fork) |
+| Object storage | MinIO (S3-compatible) |
+| Image pipeline | `image` crate + `webp` crate (EXIF-strip → Lanczos3 resize → WebP Q80) |
+| Auth | Hand-rolled Google OIDC + PKCE, HS256 JWTs via `jsonwebtoken` |
+| Dev infra | Docker Compose (db + cache + storage + mailpit) |
+| Prod infra (staging) | nginx + Let's Encrypt + systemd units on a Linux VM |
+| E2EE (planned) | MLS protocol, libsignal-rs |
 
-## Quick Start (Development)
+## Quick start (development)
 
 ```bash
-# Clone
-git clone https://github.com/vonk-social/vonk.git
-cd vonk
+git clone git@github.com:Vonk-social/Vonk-social.git
+cd Vonk-social
 
-# Start services
+# Start backing services (postgres, valkey, minio, mailpit)
 docker compose -f docker-compose.dev.yml up -d
 
-# Run database migrations
-cd packages/api
-cargo sqlx migrate run
+# Seed environment
+cp .env.example .env
+# Edit JWT_SECRET + IP_HASH_SALT (see comments in .env.example for
+# openssl commands). Google OAuth creds are optional but required for
+# the sign-in flow to work — see docs/notes/auth.md.
 
-# Start backend
-cargo run
+# Start the Rust API (migrations run automatically at boot)
+( cd packages/api && cargo run )
 
-# Start frontend (new terminal)
-cd apps/web
-npm install
-npm run dev
+# Start the SvelteKit frontend in a second terminal
+( cd apps/web && npm install && npm run dev )
 ```
 
-Open [http://localhost:5173](http://localhost:5173)
+Open **http://localhost:5173**.
 
-## Project Structure
+Optional: seed a plausible feed with 8 dummy users so `/discover` and
+`/home` have content:
+
+```bash
+docker exec -i vonk-social-vonk-db-1 psql -U vonk vonk \
+  < packages/db/seed/dev-users.sql
+```
+
+## Project structure
 
 ```
-vonk/
+Vonk-social/
 ├── apps/
-│   ├── web/             # SvelteKit frontend
-│   ├── mobile/          # Capacitor wrapper (later)
-│   └── admin/           # Moderation dashboard
+│   ├── web/                # SvelteKit 5 frontend (main UI)
+│   ├── mobile/             # .keep — Capacitor, Phase 3
+│   └── admin/              # .keep — moderation dashboard, Phase 4+
 ├── packages/
-│   ├── api/             # Rust backend (Axum)
-│   ├── db/              # SQL migrations
-│   ├── crypto/          # E2EE library
-│   ├── media/           # Image/video processing
-│   └── vonk-ui/         # Shared UI components
+│   ├── api/                # Rust backend (Axum 0.8, SQLx 0.8)
+│   │   └── src/
+│   │       ├── auth/       # JWT, cookies, Google OIDC, IP hashing
+│   │       ├── feed/       # cursor-paginated feed query
+│   │       ├── media/      # shared image pipeline (avatar + posts + snaps)
+│   │       ├── models/     # row + response types
+│   │       └── routes/     # auth / users / posts / feed / follows / snaps / media
+│   ├── db/
+│   │   ├── migrations/     # 001_initial.sql → 004_repost_pin_bookmarks.sql
+│   │   └── seed/           # dev-only fixtures
+│   ├── crypto/             # .keep — MLS E2EE library, Phase 3
+│   ├── media/              # .keep — video pipeline, Phase 4
+│   └── vonk-ui/            # .keep — shared components, later
 ├── infra/
-│   ├── docker/          # Docker Compose configs
-│   ├── nginx/           # Reverse proxy configs
-│   └── scripts/         # Deployment scripts
+│   ├── nginx/              # vonk-openview site + TLS template
+│   └── scripts/            # deploy-dev.sh
 ├── docs/
-│   ├── architecture.md
-│   ├── PRIVACY.md
-│   └── api.md
-├── docker-compose.yml
+│   ├── notes/auth.md       # wire diagram, Google Console walkthrough
+│   ├── HOSTING.md
+│   ├── FINANCES.md
+│   └── PROJECT_PLAN.md
 ├── docker-compose.dev.yml
-├── LICENSE              # AGPL-3.0
+├── CLAUDE.md               # architectural guardrails + phase plan
 └── README.md
 ```
 
-## Self-Hosting
+## Self-hosting
 
-Vonk is designed to run anywhere Docker runs:
+The code ships AGPL-3.0 so you can run your own Vonk instance. The
+staging box on `vonk.openview.be` is a good reference for the shape of
+a production deployment:
 
-```bash
-# Generate secrets
-mkdir -p secrets
-openssl rand -base64 32 > secrets/jwt_secret.txt
-openssl rand -base64 32 > secrets/db_password.txt
-echo "minioadmin" > secrets/minio_user.txt
-openssl rand -base64 32 > secrets/minio_password.txt
+- One Linux host, 8 GB RAM, 50 GB disk comfortably hosts it for a small community
+- `docker compose -f docker-compose.dev.yml up -d` provides Postgres / Valkey / MinIO
+- Rust API built with `cargo build --release` and run under systemd
+- SvelteKit built with `npm run build` and served via `node build` under systemd
+- nginx handles TLS + routes `/api/*` → API, `/media/*` → MinIO, everything else → SvelteKit
+- Let's Encrypt for certs (`certbot --nginx -d <your-host>`)
 
-# Configure
-cp .env.example .env
-# Edit .env with your domain, OAuth credentials, etc.
-
-# Launch
-docker compose up -d
-```
-
-Note: self-hosted instances are standalone. To contribute hosting capacity to the main `vonk.social` platform, see [docs/node-hosting.md](docs/node-hosting.md).
+See `infra/scripts/deploy-dev.sh` for the current staging deploy.
+Self-hosted instances are standalone today; ActivityPub federation
+would come later if there's demand.
 
 ## Contributing
 
-We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a PR.
+Pull requests welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
-**Ways to help:**
+**Highest-value contributions right now:**
 
-- 🐛 Report bugs
-- 💡 Suggest features (via GitHub Discussions)
-- 🔧 Submit pull requests
-- 🌍 Translate the interface
-- 📖 Improve documentation
-- 🔒 Report security issues (see [SECURITY.md](SECURITY.md))
-- ♥ [Donate](https://github.com/sponsors/vonk-social)
+- 🔨 Frontend for the backend-ready items (bookmark / repost / pin / author stats UI)
+- 🌍 Native-speaker review of the 13 translated landing locales (fr, de, es, it, pt, pl, sv, da, fi, el, ro, cs, uk) — NL + EN are native-quality, the rest need a look from a native eye
+- 📋 Phase 3 E2EE (MLS protocol implementation in `packages/crypto/`)
+- 🐛 Bug reports + feature suggestions via GitHub Discussions
+- 🔒 Security issues → see [SECURITY.md](SECURITY.md)
+- ♥ [Donate](https://github.com/sponsors/vonk-social) — covers hosting, anything over pays for native reviewers and designers
 
 ## Governance
 
-Vonk is operated by **VZW Vonk**, a European non-profit association (vereniging zonder winstoogmerk — a Belgian legal form). There are no shareholders, no investors, and no profit distribution.
+Vonk is operated by **VZW Vonk**, a European non-profit association
+(*vereniging zonder winstoogmerk* — a Belgian legal form). No
+shareholders, no investors, no profit distribution.
 
-Major features are proposed as RFCs and discussed publicly. The community votes on charity fund distribution annually.
+Major features are proposed as RFCs (`docs/rfcs/`) and discussed
+publicly. The community votes annually on where charity fund surplus
+goes.
+
+## Roadmap
+
+We're shipping in numbered phases, each merged as its own set of PRs on
+`main`. Current status (April 2026):
+
+- **Phase 1 — Auth & Users** — ✅ merged (PR #1)
+- **Phase 2 — Posts, feed, stories, snaps, follows** — ✅ merged (PRs #2–#8)
+- **Phase 2.5 — Bookmarks / reposts / pins / author stats / story viewers** — 🟡 backend merged (PR #9), frontend next
+- **Landing & multilingual** — ✅ merged (PRs #11–#13), 15 EU languages live
+- **Instagram-style bottom nav + dark mode + `/discover`** — ✅ merged (PRs #8, #13)
+- **Staging deploy on vonk.openview.be** — ✅ live
+- **Phase 3 — MLS E2EE + Capacitor mobile + friends import wizard** — 📋 planned
+- **Phase 4 — Public finances, short video, Snap Map, streaks** — ⏸ later
 
 ## License
 
-[AGPL-3.0](LICENSE) — You may use, modify, and host Vonk freely. All modifications must remain open source.
+[AGPL-3.0](LICENSE) — You may use, modify, and host Vonk freely. All
+modifications you distribute or host must remain open source under the
+same licence.
 
 ---
 
