@@ -16,6 +16,14 @@
 	--color-ink: #2d1f14;
 	--color-muted: #8a7766;
 	--color-border: #e9dfd1;
+	/*
+	 * Brand-spark palette — the three stops of the logo gradient
+	 * (amber → orange → magenta). Used for story rings, celebratory
+	 * moments, primary CTAs that want more pop than terracotta alone.
+	 */
+	--color-spark-amber: #fdb52a;
+	--color-spark-orange: #ff6c2f;
+	--color-spark-magenta: #d4148e;
 
 	--font-sans: 'Nunito Variable', ui-sans-serif, system-ui, sans-serif;
 	--font-display: 'Nunito Variable', ui-sans-serif, system-ui, sans-serif;
@@ -23,6 +31,24 @@
 	--radius-card: 1.25rem;      /* 20px */
 	--radius-lg: 1rem;           /* 16px */
 	--radius-button: 9999px;     /* pill */
+}
+
+/*
+ * Reusable: three-stop spark gradient for story rings, hero accents, etc.
+ * Apply with `.vonk-spark` on a background, or use the CSS variable
+ * `var(--gradient-spark)` in a custom declaration.
+ */
+:root {
+	--gradient-spark: linear-gradient(
+		135deg,
+		var(--color-spark-amber) 0%,
+		var(--color-spark-orange) 55%,
+		var(--color-spark-magenta) 100%
+	);
+}
+
+.vonk-spark {
+	background: var(--gradient-spark);
 }
 
 html,

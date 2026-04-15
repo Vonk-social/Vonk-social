@@ -2,6 +2,7 @@
 	import { page } from '$app/stores';
 	import type { Snippet } from 'svelte';
 	import type { LayoutProps } from './$types';
+	import VonkLogo from '$lib/components/VonkLogo.svelte';
 	import { t } from '$lib/i18n';
 
 	let { data, children }: LayoutProps & { children: Snippet } = $props();
@@ -23,6 +24,10 @@
 
 <main class="mx-auto flex min-h-screen max-w-xl flex-col px-6 py-10">
 	<header class="mb-8">
+		<div class="mb-4 flex items-center gap-3">
+			<VonkLogo size={36} />
+			<span class="font-display text-xl font-bold text-ink">Vonk</span>
+		</div>
 		<h1 class="font-display text-2xl font-bold text-ink">{t('onboarding.title', locale)}</h1>
 		<div class="mt-4 flex items-center gap-2">
 			{#each steps as s, i}

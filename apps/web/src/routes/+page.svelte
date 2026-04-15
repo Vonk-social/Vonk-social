@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import GoogleButton from '$lib/components/GoogleButton.svelte';
+	import VonkLogo from '$lib/components/VonkLogo.svelte';
 	import { t } from '$lib/i18n';
 	import type { PageProps } from './$types';
 
@@ -19,8 +20,10 @@
 </svelte:head>
 
 <main class="mx-auto flex min-h-screen max-w-3xl flex-col items-center justify-center px-6 py-16">
+	<VonkLogo size={88} alt="Vonk" />
+
 	<span
-		class="mb-6 inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-1.5 text-sm font-semibold text-terracotta-dark shadow-sm"
+		class="mt-6 mb-6 inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-1.5 text-sm font-semibold text-terracotta-dark shadow-sm"
 	>
 		{t('landing.badge', locale)}
 	</span>
