@@ -77,11 +77,19 @@
 
 <svelte:window on:keydown={onKeyDown} />
 
-<div class="relative flex h-full w-full flex-col overflow-hidden bg-black">
-	<div class="relative flex-1">
+<!--
+	Layout contract:
+	- Outer fills the dynamic viewport (dvh handles mobile address-bar chrome).
+	- Video area has min-h-0 + flex-1 so it CAN shrink; without min-h-0 a full
+	  1080×1920 stream pushes the controls off-screen on desktop.
+	- Video uses object-contain to avoid cropping; controls are shrink-0 + a
+	  safe-area bottom padding so iOS home bar doesn't cover the shutter.
+-->
+<div class="relative flex h-dvh max-h-screen w-full flex-col overflow-hidden bg-black">
+	<div class="relative min-h-0 flex-1">
 		<video
 			bind:this={video}
-			class="h-full w-full object-cover"
+			class="absolute inset-0 h-full w-full object-contain"
 			class:scale-x-[-1]={facingMode === 'user'}
 			playsinline
 			muted
@@ -100,7 +108,10 @@
 	</div>
 
 	<!-- Controls -->
-	<div class="flex items-center justify-around bg-black/80 py-6">
+	<div
+		class="flex shrink-0 items-center justify-around bg-black/80 py-6"
+		style="padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));"
+	>
 		<button
 			type="button"
 			class="rounded-full p-3 text-white hover:bg-white/10"
