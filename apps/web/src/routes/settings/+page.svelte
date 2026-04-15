@@ -1,10 +1,44 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import type { PageProps } from './$types';
 	import { toasts } from '$lib/stores/toasts';
 
 	let { data, form }: PageProps = $props();
+
+	let avatarBusy = $state(false);
+	let avatarPreview = $state<string | null>(null);
+
+	async function onAvatarPicked(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+		avatarPreview = URL.createObjectURL(file);
+		avatarBusy = true;
+		try {
+			const fd = new FormData();
+			fd.append('file', file);
+			const res = await fetch('/api/users/me/avatar', {
+				method: 'POST',
+				body: fd,
+				credentials: 'include'
+			});
+			if (!res.ok) {
+				const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
+				throw new Error(err.error?.message ?? `HTTP ${res.status}`);
+			}
+			toasts.push('success', 'Avatar bijgewerkt');
+			await invalidateAll();
+		} catch (e) {
+			toasts.push('error', (e as Error).message);
+		} finally {
+			avatarBusy = false;
+			input.value = '';
+		}
+	}
 
 	$effect(() => {
 		if (form && 'saved' in form && form.saved) toasts.push('success', 'Opgeslagen');
@@ -20,6 +54,37 @@
 <main class="mx-auto max-w-xl px-4 py-6">
 	<a href="/home" class="mb-4 inline-block text-sm font-semibold text-muted hover:text-ink">← Feed</a>
 	<h1 class="mb-6 font-display text-2xl font-bold text-ink">Instellingen</h1>
+
+	<section class="vonk-card mb-4">
+		<h2 class="mb-3 font-display text-lg font-bold text-ink">Avatar</h2>
+		<div class="flex items-center gap-4">
+			{#if avatarPreview}
+				<img
+					src={avatarPreview}
+					alt="Voorbeeld"
+					class="h-20 w-20 rounded-full border border-border object-cover"
+				/>
+			{:else}
+				<Avatar url={data.user.avatar_url} name={data.user.display_name} size={80} />
+			{/if}
+			<label
+				class="inline-flex cursor-pointer items-center gap-2 rounded-[var(--radius-button)] border border-border bg-white px-5 py-2.5 text-sm font-semibold text-ink hover:bg-border/40"
+				class:opacity-60={avatarBusy}
+			>
+				<input
+					type="file"
+					class="sr-only"
+					accept="image/*"
+					disabled={avatarBusy}
+					onchange={onAvatarPicked}
+				/>
+				{avatarBusy ? 'Uploaden…' : 'Andere foto kiezen'}
+			</label>
+		</div>
+		<p class="mt-3 text-xs text-muted">
+			EXIF-data (zoals GPS) wordt automatisch verwijderd voor we je foto opslaan.
+		</p>
+	</section>
 
 	<section class="vonk-card mb-4">
 		<h2 class="mb-3 font-display text-lg font-bold text-ink">Profiel</h2>

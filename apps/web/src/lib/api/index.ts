@@ -7,3 +7,4 @@ export * from './feed';
 export * from './follows';
 export * from './snaps';
 export * from './media';
+export * from './users';
