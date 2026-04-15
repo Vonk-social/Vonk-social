@@ -1,10 +1,19 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
+import { fetchFeed } from '$lib/api/feed';
+import { fetchStories } from '$lib/api/feed';
 
-export const load: PageServerLoad = ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, request }) => {
 	if (!locals.user) throw redirect(303, '/');
 	if (locals.user.needs_onboarding) throw redirect(303, '/onboarding/username');
-	return { user: locals.user };
+
+	const cookies = request.headers.get('cookie') ?? '';
+	// Parallel — stories tray + first feed page.
+	const [feed, stories] = await Promise.all([
+		fetchFeed({ limit: 20 }, cookies).catch(() => ({ data: [], cursor: null, has_more: false })),
+		fetchStories(cookies).catch(() => [])
+	]);
+	return { user: locals.user, feed, stories };
 };
 
 export const actions: Actions = {

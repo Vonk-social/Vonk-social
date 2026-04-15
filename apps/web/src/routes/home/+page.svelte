@@ -1,48 +1,110 @@
 <script lang="ts">
+	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import Button from '$lib/components/Button.svelte';
-	import Card from '$lib/components/Card.svelte';
-	import { t } from '$lib/i18n';
+	import Toast from '$lib/components/ui/Toast.svelte';
+	import VonkLogo from '$lib/components/VonkLogo.svelte';
+	import PostCard from '$lib/components/feed/PostCard.svelte';
+	import PostComposer from '$lib/components/feed/PostComposer.svelte';
+	import StoryTray from '$lib/components/stories/StoryTray.svelte';
+	import StoryViewer from '$lib/components/stories/StoryViewer.svelte';
+	import { fetchFeed, type StoryGroup } from '$lib/api/feed';
+	import type { PublicPost } from '$lib/api/posts';
 	import type { PageProps } from './$types';
+	import { untrack } from 'svelte';
 
 	let { data }: PageProps = $props();
-	const locale = $derived(data.user.locale);
-	const welcome = $derived(t('home.welcome', locale).replace('{name}', data.user.display_name));
+
+	let posts = $state<PublicPost[]>(untrack(() => data.feed.data));
+	let cursor = $state<string | null>(untrack(() => data.feed.cursor));
+	let hasMore = $state<boolean>(untrack(() => data.feed.has_more));
+	let loadingMore = $state(false);
+
+	let activeStory = $state<StoryGroup | null>(null);
+
+	async function loadMore() {
+		if (loadingMore || !hasMore) return;
+		loadingMore = true;
+		try {
+			const page = await fetchFeed({ cursor: cursor ?? undefined, limit: 20 });
+			posts = [...posts, ...page.data];
+			cursor = page.cursor;
+			hasMore = page.has_more;
+		} finally {
+			loadingMore = false;
+		}
+	}
+
+	function onPosted(post: PublicPost) {
+		posts = [post, ...posts];
+	}
 </script>
 
 <svelte:head>
-	<title>Vonk — {data.user.username}</title>
+	<title>Vonk — Home</title>
 </svelte:head>
 
-<main class="mx-auto flex min-h-screen max-w-2xl flex-col px-6 py-10">
-	<header class="flex items-center justify-between">
-		<div class="flex items-center gap-4">
-			{#if data.user.avatar_url}
-				<img
-					src={data.user.avatar_url}
-					alt={data.user.display_name}
-					class="h-14 w-14 rounded-full border border-border object-cover"
-				/>
-			{:else}
-				<div
-					class="flex h-14 w-14 items-center justify-center rounded-full bg-terracotta text-lg font-bold text-white"
-				>
-					{data.user.display_name.slice(0, 1)}
-				</div>
-			{/if}
-			<div>
-				<p class="font-display text-xl font-bold text-ink">{welcome}</p>
-				<p class="text-sm text-muted">@{data.user.username}</p>
-			</div>
-		</div>
-
-		<form method="POST" action="?/logout">
-			<Button type="submit" variant="ghost">{t('home.logout', locale)}</Button>
-		</form>
+<main class="mx-auto max-w-2xl px-4 py-6">
+	<!-- Top bar -->
+	<header class="mb-6 flex items-center justify-between">
+		<a href="/home" class="flex items-center gap-2">
+			<VonkLogo size={32} />
+			<span class="font-display text-xl font-bold text-ink">Vonk</span>
+		</a>
+		<nav class="flex items-center gap-1">
+			<a
+				href="/camera"
+				class="inline-flex items-center gap-1.5 rounded-full bg-terracotta px-4 py-2 text-sm font-semibold text-white hover:bg-terracotta-dark"
+				aria-label="Camera"
+			>📷 Camera</a>
+			<a
+				href="/dm"
+				class="rounded-full p-2 hover:bg-border"
+				aria-label="Snaps"
+			>✉️</a>
+			<a
+				href="/u/{data.user.username}"
+				class="rounded-full hover:opacity-80"
+				aria-label="Mijn profiel"
+			>
+				<Avatar url={data.user.avatar_url} name={data.user.display_name} size={36} />
+			</a>
+			<form method="POST" action="?/logout">
+				<Button type="submit" variant="ghost">Uit</Button>
+			</form>
+		</nav>
 	</header>
 
-	<section class="mt-10">
-		<Card>
-			<p class="text-muted">{t('home.empty', locale)}</p>
-		</Card>
+	<!-- Stories -->
+	<StoryTray groups={data.stories} onOpen={(g) => (activeStory = g)} />
+
+	<!-- Composer -->
+	<section class="mb-6">
+		<PostComposer user={data.user} {onPosted} />
+	</section>
+
+	<!-- Feed -->
+	<section>
+		{#if posts.length === 0}
+			<div class="vonk-card text-center text-muted">
+				Niks in je feed. Volg wat mensen of post iets om de bal aan het rollen te krijgen.
+			</div>
+		{:else}
+			{#each posts as p (p.uuid)}
+				<PostCard post={p} />
+			{/each}
+			{#if hasMore}
+				<div class="mt-4 text-center">
+					<Button variant="ghost" disabled={loadingMore} onclick={loadMore}>
+						{loadingMore ? 'Laden…' : 'Meer'}
+					</Button>
+				</div>
+			{/if}
+		{/if}
 	</section>
 </main>
+
+<Toast />
+
+{#if activeStory}
+	<StoryViewer group={activeStory} onClose={() => (activeStory = null)} />
+{/if}

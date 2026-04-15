@@ -1,0 +1,14 @@
+{
+  "name": "Vonk",
+  "short_name": "Vonk",
+  "description": "Sociaal, zonder de prijs. Gemaakt in Europa.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F0",
+  "theme_color": "#FF6C2F",
+  "icons": [
+    { "src": "/icons/vonk-appicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/vonk-appicon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/vonk-appicon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
