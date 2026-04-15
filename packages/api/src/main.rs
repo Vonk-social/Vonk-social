@@ -20,6 +20,8 @@ mod auth;
 mod config;
 mod db;
 mod error;
+mod feed;
+mod media;
 mod models;
 mod routes;
 mod s3;
@@ -121,6 +123,11 @@ async fn main() -> anyhow::Result<()> {
         .route("/api/open/summary", get(open_finances))
         .merge(routes::auth::router())
         .merge(routes::users::router())
+        .merge(routes::media::router())
+        .merge(routes::posts::router())
+        .merge(routes::feed::router())
+        .merge(routes::follows::router())
+        .merge(routes::snaps::router())
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);

@@ -7,8 +7,6 @@
 //! * `GET  /api/users/check-username`     — username availability check
 //! * `GET  /api/users/:username`          — public profile
 
-use std::io::Cursor;
-
 use axum::{
     extract::{DefaultBodyLimit, Multipart, Path, Query, State},
     http::StatusCode,
@@ -16,7 +14,6 @@ use axum::{
     Json, Router,
 };
 use aws_sdk_s3::primitives::ByteStream;
-use image::{imageops::FilterType, ImageReader};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -24,11 +21,12 @@ use validator::Validate;
 
 use crate::auth::AuthUser;
 use crate::error::{ApiError, ApiResult};
+use crate::media::pipeline;
 use crate::models::{MeProfile, PublicProfile, User};
+use crate::routes::follows::{follow_counts, follow_state};
 use crate::state::AppState;
 
 const AVATAR_MAX_BYTES: usize = 5 * 1024 * 1024;
-const AVATAR_SIZES: &[(&str, u32)] = &[("thumb", 64), ("medium", 256), ("full", 512)];
 
 /// Username format constraint mirrors the SQL CHECK in `001_initial.sql`:
 /// `^[a-z0-9_]{3,30}$`.
@@ -234,10 +232,21 @@ async fn check_username(
 
 // ── /users/{username} ────────────────────────────────────────
 
+#[derive(Serialize)]
+struct ProfilePage {
+    #[serde(flatten)]
+    profile: PublicProfile,
+    is_private: bool,
+    followers_count: i64,
+    following_count: i64,
+    follow_state: &'static str,
+}
+
 async fn public_profile(
     State(state): State<AppState>,
+    AuthUser(me): AuthUser,
     Path(username): Path<String>,
-) -> ApiResult<Json<DataEnvelope<PublicProfile>>> {
+) -> ApiResult<Json<DataEnvelope<ProfilePage>>> {
     let user = sqlx::query_as::<_, User>(&format!(
         "SELECT {cols} FROM users WHERE username = $1 \
                                    AND deleted_at IS NULL \
@@ -249,8 +258,17 @@ async fn public_profile(
     .await?
     .ok_or(ApiError::NotFound)?;
 
+    let (followers_count, following_count) = follow_counts(&state, user.id).await?;
+    let state_ = follow_state(&state, me.id, user.id).await?;
+
     Ok(Json(DataEnvelope {
-        data: (&user).into(),
+        data: ProfilePage {
+            profile: (&user).into(),
+            is_private: user.is_private.unwrap_or(false),
+            followers_count,
+            following_count,
+            follow_state: state_.as_str(),
+        },
     }))
 }
 
@@ -299,20 +317,26 @@ async fn upload_avatar(
         return Err(ApiError::PayloadTooLarge);
     }
 
-    // Decode & re-encode. Re-encoding drops EXIF/XMP/IPTC metadata entirely.
-    let variants = tokio::task::spawn_blocking(move || process_avatar(&bytes))
+    // Decode & re-encode via the shared pipeline. Re-encoding drops
+    // EXIF/XMP/IPTC metadata entirely.
+    let variants = {
+        let bytes = bytes.clone();
+        tokio::task::spawn_blocking(move || {
+            pipeline::process_image(&bytes, pipeline::AVATAR_VARIANTS)
+        })
         .await
-        .map_err(|e| ApiError::Internal(anyhow::anyhow!("avatar worker panicked: {e}")))??;
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!("avatar worker panicked: {e}")))??
+    };
 
     // Upload all three variants.
-    for (suffix, webp) in &variants {
-        let key = format!("avatars/{}/{suffix}.webp", user.uuid);
+    for v in &variants {
+        let key = format!("avatars/{}/{}.webp", user.uuid, v.name);
         state
             .s3
             .put_object()
             .bucket(&state.config.s3_bucket)
             .key(&key)
-            .body(ByteStream::from(webp.clone()))
+            .body(ByteStream::from(v.bytes.clone()))
             .content_type("image/webp")
             .cache_control("public, max-age=31536000, immutable")
             .send()
@@ -332,40 +356,6 @@ async fn upload_avatar(
     Ok(Json(DataEnvelope {
         data: AvatarResponse { avatar_url },
     }))
-}
-
-/// Decode, centre-crop square, resize to each avatar size, encode WebP.
-///
-/// This is the privacy-critical path: the raw bytes (which may contain EXIF
-/// GPS / camera metadata) are parsed once, converted to an in-memory RGBA
-/// buffer, and never written back out in their original form.
-fn process_avatar(bytes: &[u8]) -> ApiResult<Vec<(&'static str, Vec<u8>)>> {
-    let cursor = Cursor::new(bytes);
-    let reader = ImageReader::new(cursor)
-        .with_guessed_format()
-        .map_err(|e| ApiError::bad_request("bad_image", e.to_string()))?;
-    let img = reader
-        .decode()
-        .map_err(|e| ApiError::bad_request("bad_image", e.to_string()))?;
-
-    // Normalise to RGBA, then centre-crop to a square.
-    let rgba = img.to_rgba8();
-    let (w, h) = rgba.dimensions();
-    let side = w.min(h);
-    let x = (w - side) / 2;
-    let y = (h - side) / 2;
-    let square_buf = image::imageops::crop_imm(&rgba, x, y, side, side).to_image();
-    let square = image::DynamicImage::ImageRgba8(square_buf);
-
-    let mut out = Vec::with_capacity(AVATAR_SIZES.len());
-    for (suffix, size) in AVATAR_SIZES {
-        let resized = square.resize_exact(*size, *size, FilterType::Lanczos3);
-        let rgba = resized.to_rgba8();
-        let encoder = webp::Encoder::from_rgba(rgba.as_raw(), resized.width(), resized.height());
-        let webp_mem = encoder.encode(82.0);
-        out.push((*suffix, webp_mem.to_vec()));
-    }
-    Ok(out)
 }
 
 async fn delete_avatar(
