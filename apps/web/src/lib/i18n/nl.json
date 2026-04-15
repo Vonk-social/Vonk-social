@@ -1,9 +1,34 @@
 {
-	"landing.hero.title": "Sociaal, zonder de prijs.",
-	"landing.hero.subtitle": "Geen advertenties. Geen tracking. Geen algoritme dat je aandacht verkoopt. Vonk is sociaal zoals het bedoeld was — voor iedereen, in heel Europa.",
+	"landing.hero.title": "Social media, maar dan voor mensen",
+	"landing.hero.subtitle": "Geen advertenties. Geen algoritme. Geen dataverkoop. Gewoon een plek om lief en leed te delen met de mensen die ertoe doen. Open source, van iedereen, voor iedereen.",
 	"landing.cta.login": "Aanmelden met Google",
-	"landing.cta.learn": "Lees waarom",
+	"landing.cta.learn": "Lees waarom ↓",
 	"landing.badge": "Gemaakt in Europa 🇪🇺",
+
+	"landing.why.title": "Waarom Vonk bestaat",
+	"landing.why.intro": "Grote platforms zijn niet langer dorpspleinen, maar winkelstraten waar jij het etalagepop bent. Vonk doet het anders — zonder winstmotief, zonder aandeelhouders, zonder dataverkoop.",
+
+	"landing.pillar1.title": "Jij bent geen product",
+	"landing.pillar1.body": "End-to-end encryptie op directe berichten. Foto-metadata (zoals GPS) wordt automatisch gestript. IP-adressen worden na 48 uur gewist. Geen trackers, geen fingerprinting. Punt.",
+
+	"landing.pillar2.title": "100% open source",
+	"landing.pillar2.body": "Elke regel code is publiek, onder AGPL-3.0 licentie. Geen verborgen trackers, geen verborgen agenda. Elke wijziging in de code is zichtbaar. Check het zelf of laat iemand die je vertrouwt het checken.",
+
+	"landing.pillar3.title": "Overschot gaat naar goede doelen",
+	"landing.pillar3.body": "Donaties dekken de hosting. Wat overblijft gaat naar organisaties voor wereldvrede en gezondheid. De Vonk-community stemt jaarlijks waar het naartoe gaat. Geen uitkering aan aandeelhouders, want die zijn er niet.",
+
+	"landing.pillar4.title": "Jouw tempo, jouw feed",
+	"landing.pillar4.body": "Chronologische tijdlijn. Geen engagement-algoritme, geen dopamine-loops, geen 'suggested for you'. En likes? Alleen de auteur ziet hoe veel mensen zijn post apprecieerden — jij beslist zelf of die dingen je stemming moeten bepalen.",
+
+	"landing.finances.title": "Alles transparant",
+	"landing.finances.body": "Elke euro die Vonk ontvangt en uitgeeft wordt publiek getoond. Donaties, facturen, hosting-kosten, doorstortingen naar goede doelen — alles live leesbaar, door iedereen. Binnenkort te volgen op /open.",
+
+	"landing.cta2.title": "Klaar om het te proberen?",
+	"landing.cta2.body": "Nog in alpha, maar je bent welkom. Aanmelden kan met je Google-account; Apple en GitHub volgen later. Je kan altijd alles exporteren of je account volledig wissen.",
+
+	"landing.footer.license": "Vonk — AGPL-3.0",
+	"landing.footer.source": "Code & issues op GitHub",
+	"landing.footer.europe": "Gemaakt in Europa 🇪🇺",
 
 	"login.title": "Welkom bij Vonk",
 	"login.subtitle": "Meld je aan met je bestaande account. Geen wachtwoorden om te onthouden, geen spam.",

@@ -1,0 +1,32 @@
+{
+	"landing.hero.title": "Sociale medier, men for mennesker",
+	"landing.hero.subtitle": "Ingen reklamer. Ingen algoritme. Intet salg af data. Bare et sted at dele glæde og sorg med dem, der faktisk betyder noget. Open source, af alle, for alle.",
+	"landing.cta.login": "Log ind med Google",
+	"landing.cta.learn": "Læs hvorfor ↓",
+	"landing.badge": "Lavet i Europa 🇪🇺",
+
+	"landing.why.title": "Hvorfor Vonk findes",
+	"landing.why.intro": "De store platforme er ikke længere landsbypladser, men handelsgader hvor du er mannequinen i vinduet. Vonk er anderledes — uden profitmotiv, uden aktionærer, uden datasalg.",
+
+	"landing.pillar1.title": "Du er ikke produktet",
+	"landing.pillar1.body": "End-to-end-kryptering på direkte beskeder. Fotometadata (som GPS) fjernes automatisk. IP-adresser slettes efter 48 timer. Ingen trackere, ingen fingerprinting. Punktum.",
+
+	"landing.pillar2.title": "100% open source",
+	"landing.pillar2.body": "Hver linje kode er offentlig under AGPL-3.0. Ingen skjulte trackere, ingen skjult dagsorden. Hver ændring er synlig. Tjek selv, eller lad en du stoler på, tjekke.",
+
+	"landing.pillar3.title": "Overskud til gode formål",
+	"landing.pillar3.body": "Donationer dækker hostingen. Resten går til organisationer for verdensfred og sundhed. Vonk-fællesskabet stemmer hvert år om hvor. Ingen udbytte til aktionærer — dem er der ikke.",
+
+	"landing.pillar4.title": "Dit tempo, dit feed",
+	"landing.pillar4.body": "Kronologisk tidslinje. Ingen engagementsalgoritme, ingen dopaminsløjfer, ingen «foreslået til dig». Likes? Kun forfatteren ser, hvor mange der kunne lide et opslag — du bestemmer selv, om det skal påvirke dit humør.",
+
+	"landing.finances.title": "Alt transparent",
+	"landing.finances.body": "Hver euro Vonk modtager og bruger vises offentligt. Donationer, fakturaer, hostingomkostninger, overførsler til velgørenhed — alt læsbart live, af alle. Snart på /open.",
+
+	"landing.cta2.title": "Klar til at prøve det?",
+	"landing.cta2.body": "Stadig i alfa, men du er velkommen. Log ind med din Google-konto; Apple og GitHub kommer. Du kan altid eksportere alt eller slette din konto helt.",
+
+	"landing.footer.license": "Vonk — AGPL-3.0",
+	"landing.footer.source": "Kode & issues på GitHub",
+	"landing.footer.europe": "Lavet i Europa 🇪🇺"
+}

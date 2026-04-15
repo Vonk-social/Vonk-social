@@ -1,0 +1,32 @@
+{
+	"landing.hero.title": "Sociální sítě, ale pro lidi",
+	"landing.hero.subtitle": "Žádné reklamy. Žádný algoritmus. Žádný prodej dat. Prostě místo, kde můžete sdílet radosti i strasti s lidmi, na kterých opravdu záleží. Open source, všech, pro všechny.",
+	"landing.cta.login": "Přihlásit přes Google",
+	"landing.cta.learn": "Proč ↓",
+	"landing.badge": "Vyrobeno v Evropě 🇪🇺",
+
+	"landing.why.title": "Proč Vonk existuje",
+	"landing.why.intro": "Velké platformy už nejsou vesnická náměstí, ale obchodní ulice, kde jste figurínou ve výloze. Vonk je jiný — bez motivace zisku, bez akcionářů, bez prodeje dat.",
+
+	"landing.pillar1.title": "Nejste produkt",
+	"landing.pillar1.body": "End-to-end šifrování přímých zpráv. Metadata fotek (jako GPS) se automaticky odstraňují. IP adresy se mažou po 48 hodinách. Žádné trackery, žádný fingerprinting. Tečka.",
+
+	"landing.pillar2.title": "100% open source",
+	"landing.pillar2.body": "Každý řádek kódu je veřejný, pod licencí AGPL-3.0. Žádné skryté trackery, žádná skrytá agenda. Každá změna je viditelná. Ověřte si to sami, nebo nechte někoho, komu věříte.",
+
+	"landing.pillar3.title": "Přebytek na dobré účely",
+	"landing.pillar3.body": "Dary pokrývají hosting. Zbytek jde organizacím pro světový mír a zdraví. Komunita Vonk každý rok hlasuje kam. Žádné dividendy akcionářům — nejsou.",
+
+	"landing.pillar4.title": "Vaše tempo, váš feed",
+	"landing.pillar4.body": "Chronologická timeline. Žádný algoritmus zapojení, žádné dopaminové smyčky, žádné «doporučeno pro vás». Lajky? Jen autor vidí, kolik lidí příspěvek ocenilo — vy rozhodujete, zda to má ovlivnit vaši náladu.",
+
+	"landing.finances.title": "Vše transparentní",
+	"landing.finances.body": "Každé euro, které Vonk přijme a utratí, je veřejné. Dary, faktury, náklady na hosting, převody na charitu — vše čitelné v reálném čase, pro každého. Brzy na /open.",
+
+	"landing.cta2.title": "Připraveni to vyzkoušet?",
+	"landing.cta2.body": "Stále alfa, ale jste vítáni. Přihlaste se účtem Google; Apple a GitHub přijdou. Kdykoli můžete vše exportovat nebo účet úplně smazat.",
+
+	"landing.footer.license": "Vonk — AGPL-3.0",
+	"landing.footer.source": "Kód a issues na GitHubu",
+	"landing.footer.europe": "Vyrobeno v Evropě 🇪🇺"
+}

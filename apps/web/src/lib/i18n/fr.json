@@ -1,0 +1,32 @@
+{
+	"landing.hero.title": "Le réseau social, mais pour les gens",
+	"landing.hero.subtitle": "Pas de publicité. Pas d'algorithme. Pas de vente de données. Juste un endroit pour partager joies et peines avec les personnes qui comptent vraiment. Open source, à tout le monde, pour tout le monde.",
+	"landing.cta.login": "Se connecter avec Google",
+	"landing.cta.learn": "Découvrir pourquoi ↓",
+	"landing.badge": "Fait en Europe 🇪🇺",
+
+	"landing.why.title": "Pourquoi Vonk existe",
+	"landing.why.intro": "Les grandes plateformes ne sont plus des places de village mais des rues commerçantes où vous êtes le mannequin en vitrine. Vonk est différent — sans but lucratif, sans actionnaires, sans revente de données.",
+
+	"landing.pillar1.title": "Vous n'êtes pas le produit",
+	"landing.pillar1.body": "Chiffrement de bout en bout pour les messages directs. Les métadonnées photo (comme le GPS) sont automatiquement supprimées. Les adresses IP sont effacées après 48 heures. Pas de traceurs, pas de fingerprinting. Point.",
+
+	"landing.pillar2.title": "100% open source",
+	"landing.pillar2.body": "Chaque ligne de code est publique, sous licence AGPL-3.0. Pas de traceurs cachés, pas d'agenda caché. Chaque changement est visible. Vérifiez vous-même, ou demandez à quelqu'un en qui vous avez confiance.",
+
+	"landing.pillar3.title": "Les surplus vont aux bonnes causes",
+	"landing.pillar3.body": "Les dons couvrent l'hébergement. Tout le reste va à des organisations pour la paix mondiale et la santé. La communauté Vonk vote chaque année où l'argent va. Pas de dividendes aux actionnaires — il n'y en a pas.",
+
+	"landing.pillar4.title": "Votre rythme, votre fil",
+	"landing.pillar4.body": "Fil chronologique. Pas d'algorithme d'engagement, pas de boucles dopaminergiques, pas de « suggéré pour vous ». Les likes ? Seul l'auteur voit combien de personnes ont apprécié son post — à vous de décider si cela doit influencer votre humeur.",
+
+	"landing.finances.title": "Tout transparent",
+	"landing.finances.body": "Chaque euro reçu et dépensé par Vonk est public. Dons, factures, frais d'hébergement, versements aux œuvres caritatives — tout est lisible en direct par tout le monde. Bientôt sur /open.",
+
+	"landing.cta2.title": "Prêt·e à essayer ?",
+	"landing.cta2.body": "Encore en alpha, mais vous êtes le/la bienvenu·e. Inscription avec votre compte Google ; Apple et GitHub suivront. Vous pouvez toujours tout exporter ou supprimer complètement votre compte.",
+
+	"landing.footer.license": "Vonk — AGPL-3.0",
+	"landing.footer.source": "Code & issues sur GitHub",
+	"landing.footer.europe": "Fait en Europe 🇪🇺"
+}

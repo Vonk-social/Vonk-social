@@ -1,0 +1,32 @@
+{
+	"landing.hero.title": "Redes sociales, pero para personas",
+	"landing.hero.subtitle": "Sin anuncios. Sin algoritmo. Sin venta de datos. Solo un lugar para compartir alegrías y penas con quienes de verdad importan. Código abierto, de todos, para todos.",
+	"landing.cta.login": "Entrar con Google",
+	"landing.cta.learn": "Descubre por qué ↓",
+	"landing.badge": "Hecho en Europa 🇪🇺",
+
+	"landing.why.title": "Por qué existe Vonk",
+	"landing.why.intro": "Las grandes plataformas han dejado de ser plazas de pueblo para convertirse en calles comerciales donde tú eres el maniquí del escaparate. Vonk es diferente — sin ánimo de lucro, sin accionistas, sin venta de datos.",
+
+	"landing.pillar1.title": "Tú no eres el producto",
+	"landing.pillar1.body": "Cifrado de extremo a extremo en los mensajes directos. Los metadatos de las fotos (como el GPS) se eliminan automáticamente. Las direcciones IP se borran a las 48 horas. Sin rastreadores, sin fingerprinting. Punto.",
+
+	"landing.pillar2.title": "100% código abierto",
+	"landing.pillar2.body": "Cada línea de código es pública, bajo licencia AGPL-3.0. Sin rastreadores ocultos, sin agenda oculta. Cada cambio es visible. Compruébalo tú o que alguien de tu confianza lo compruebe.",
+
+	"landing.pillar3.title": "El excedente va a buenas causas",
+	"landing.pillar3.body": "Las donaciones cubren el hosting. Lo que sobra va a organizaciones por la paz mundial y la salud. La comunidad Vonk vota cada año a dónde. Sin dividendos a accionistas — no hay.",
+
+	"landing.pillar4.title": "Tu ritmo, tu feed",
+	"landing.pillar4.body": "Línea de tiempo cronológica. Sin algoritmo de engagement, sin bucles de dopamina, sin «sugerido para ti». ¿Los likes? Solo el autor ve cuántas personas apreciaron su post — tú decides si eso influye en tu ánimo.",
+
+	"landing.finances.title": "Todo transparente",
+	"landing.finances.body": "Cada euro que Vonk recibe y gasta se muestra públicamente. Donaciones, facturas, costes de hosting, transferencias a organizaciones benéficas — todo legible en vivo, por cualquiera. Pronto en /open.",
+
+	"landing.cta2.title": "¿Listo/a para probarlo?",
+	"landing.cta2.body": "Aún en alpha, pero eres bienvenido/a. Entra con tu cuenta de Google; Apple y GitHub llegan más tarde. Siempre puedes exportar todo o eliminar tu cuenta por completo.",
+
+	"landing.footer.license": "Vonk — AGPL-3.0",
+	"landing.footer.source": "Código e issues en GitHub",
+	"landing.footer.europe": "Hecho en Europa 🇪🇺"
+}

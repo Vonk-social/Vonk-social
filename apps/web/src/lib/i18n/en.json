@@ -1,9 +1,34 @@
 {
-	"landing.hero.title": "Social, without the price tag.",
-	"landing.hero.subtitle": "No ads. No tracking. No algorithm selling your attention. Vonk is social as it was meant to be — for everyone, across Europe.",
+	"landing.hero.title": "Social media, but for people",
+	"landing.hero.subtitle": "No ads. No algorithm. No data sales. Just a place to share joy and sorrow with the people who matter. Open source, owned by everyone, for everyone.",
 	"landing.cta.login": "Sign in with Google",
-	"landing.cta.learn": "Why Vonk",
+	"landing.cta.learn": "Read why ↓",
 	"landing.badge": "Made in Europe 🇪🇺",
+
+	"landing.why.title": "Why Vonk exists",
+	"landing.why.intro": "The big platforms have stopped being village squares and become shopping streets where you are the mannequin in the window. Vonk is different — no profit motive, no shareholders, no data sales.",
+
+	"landing.pillar1.title": "You are not the product",
+	"landing.pillar1.body": "End-to-end encryption on direct messages. Photo metadata (like GPS) is automatically stripped. IP addresses are deleted after 48 hours. No trackers, no fingerprinting. Full stop.",
+
+	"landing.pillar2.title": "100% open source",
+	"landing.pillar2.body": "Every line of code is public, under AGPL-3.0. No hidden trackers, no hidden agenda. Every change is visible. Verify it yourself, or have someone you trust verify it.",
+
+	"landing.pillar3.title": "Surplus goes to good causes",
+	"landing.pillar3.body": "Donations cover hosting. Anything left over goes to organisations for world peace and health. The Vonk community votes each year on where it goes. No payout to shareholders — there aren't any.",
+
+	"landing.pillar4.title": "Your pace, your feed",
+	"landing.pillar4.body": "Chronological timeline. No engagement algorithm, no dopamine loops, no 'suggested for you'. And likes? Only the author sees how many people appreciated a post — you decide for yourself whether that should shape your mood.",
+
+	"landing.finances.title": "Everything transparent",
+	"landing.finances.body": "Every euro Vonk receives and spends is shown publicly. Donations, invoices, hosting costs, charity transfers — all live-readable by anyone. Soon at /open.",
+
+	"landing.cta2.title": "Ready to try it?",
+	"landing.cta2.body": "Still in alpha, but you're welcome. You can sign in with Google; Apple and GitHub follow later. You can always export everything or delete your account completely.",
+
+	"landing.footer.license": "Vonk — AGPL-3.0",
+	"landing.footer.source": "Code & issues on GitHub",
+	"landing.footer.europe": "Made in Europe 🇪🇺",
 
 	"login.title": "Welcome to Vonk",
 	"login.subtitle": "Sign in with an account you already have. No passwords to remember, no spam.",

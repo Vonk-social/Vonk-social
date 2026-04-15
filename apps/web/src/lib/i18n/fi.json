@@ -1,0 +1,32 @@
+{
+	"landing.hero.title": "Sosiaalinen media, mutta ihmisille",
+	"landing.hero.subtitle": "Ei mainoksia. Ei algoritmia. Ei tietojen myyntiä. Vain paikka jakaa iloja ja suruja niiden kanssa, joilla on merkitystä. Avoin lähdekoodi, kaikkien, kaikille.",
+	"landing.cta.login": "Kirjaudu Googlella",
+	"landing.cta.learn": "Lue miksi ↓",
+	"landing.badge": "Tehty Euroopassa 🇪🇺",
+
+	"landing.why.title": "Miksi Vonk on olemassa",
+	"landing.why.intro": "Suuret alustat eivät ole enää kylätorit vaan kauppakatuja, joissa sinä olet näyteikkunan mallinukke. Vonk on erilainen — ei voittoa tavoitteleva, ei osakkeenomistajia, ei tietojen myyntiä.",
+
+	"landing.pillar1.title": "Et ole tuote",
+	"landing.pillar1.body": "Päästä päähän -salaus yksityisviesteissä. Kuvien metatiedot (kuten GPS) poistetaan automaattisesti. IP-osoitteet pyyhitään 48 tunnin jälkeen. Ei seuraimia, ei sormenjälkiseurantaa. Piste.",
+
+	"landing.pillar2.title": "100% avointa lähdekoodia",
+	"landing.pillar2.body": "Jokainen rivi koodia on julkinen, AGPL-3.0-lisenssin alla. Ei piilotettuja seuraimia, ei piiloagendaa. Jokainen muutos on näkyvissä. Tarkista itse tai anna luottamasi henkilön tarkistaa.",
+
+	"landing.pillar3.title": "Ylijäämä hyviin tarkoituksiin",
+	"landing.pillar3.body": "Lahjoitukset kattavat hostingin. Loput menevät maailmanrauhan ja terveyden järjestöille. Vonk-yhteisö äänestää vuosittain. Ei osinkoja osakkeenomistajille — heitä ei ole.",
+
+	"landing.pillar4.title": "Sinun tahtisi, sinun syötteesi",
+	"landing.pillar4.body": "Kronologinen aikajana. Ei sitouttamisalgoritmia, ei dopamiinisilmukoita, ei «sinulle ehdotettua». Tykkäykset? Vain kirjoittaja näkee, kuinka moni piti julkaisusta — sinä päätät, vaikuttaako se mielialaasi.",
+
+	"landing.finances.title": "Kaikki läpinäkyvää",
+	"landing.finances.body": "Jokainen Vonkin saama ja kuluttama euro näytetään julkisesti. Lahjoitukset, laskut, hostingkulut, tilisiirrot hyväntekeväisyyteen — kaikki luettavissa reaaliaikaisesti, kenen tahansa. Pian osoitteessa /open.",
+
+	"landing.cta2.title": "Valmis kokeilemaan?",
+	"landing.cta2.body": "Vielä alfa-vaiheessa, mutta tervetuloa. Kirjaudu Google-tililläsi; Apple ja GitHub tulevat myöhemmin. Voit aina viedä kaiken tai poistaa tilisi kokonaan.",
+
+	"landing.footer.license": "Vonk — AGPL-3.0",
+	"landing.footer.source": "Koodi ja issuet GitHubissa",
+	"landing.footer.europe": "Tehty Euroopassa 🇪🇺"
+}

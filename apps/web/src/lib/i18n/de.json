@@ -1,0 +1,32 @@
+{
+	"landing.hero.title": "Soziale Medien, aber für Menschen",
+	"landing.hero.subtitle": "Keine Werbung. Kein Algorithmus. Kein Datenverkauf. Einfach ein Ort, um Freude und Leid mit den Menschen zu teilen, die wirklich zählen. Open Source, von allen, für alle.",
+	"landing.cta.login": "Mit Google anmelden",
+	"landing.cta.learn": "Warum Vonk ↓",
+	"landing.badge": "Gemacht in Europa 🇪🇺",
+
+	"landing.why.title": "Warum es Vonk gibt",
+	"landing.why.intro": "Die großen Plattformen sind keine Dorfplätze mehr, sondern Einkaufsstraßen, in denen Sie die Schaufensterpuppe sind. Vonk macht es anders — ohne Profitinteresse, ohne Aktionäre, ohne Datenverkauf.",
+
+	"landing.pillar1.title": "Du bist nicht das Produkt",
+	"landing.pillar1.body": "Ende-zu-Ende-Verschlüsselung bei Direktnachrichten. Foto-Metadaten (wie GPS) werden automatisch entfernt. IP-Adressen werden nach 48 Stunden gelöscht. Keine Tracker, kein Fingerprinting. Punkt.",
+
+	"landing.pillar2.title": "100% Open Source",
+	"landing.pillar2.body": "Jede Codezeile ist öffentlich, unter AGPL-3.0. Keine versteckten Tracker, keine versteckte Agenda. Jede Änderung ist sichtbar. Prüfe es selbst oder lass es von jemandem deines Vertrauens prüfen.",
+
+	"landing.pillar3.title": "Überschüsse gehen an gute Zwecke",
+	"landing.pillar3.body": "Spenden decken die Hosting-Kosten. Alles Übrige geht an Organisationen für Weltfrieden und Gesundheit. Die Vonk-Community entscheidet jährlich per Abstimmung. Keine Dividenden an Aktionäre — die gibt es nicht.",
+
+	"landing.pillar4.title": "Dein Tempo, dein Feed",
+	"landing.pillar4.body": "Chronologische Timeline. Kein Engagement-Algorithmus, keine Dopamin-Schleifen, keine „Für dich vorgeschlagen”. Likes? Nur der Autor sieht, wie viele Menschen einen Beitrag mochten — du entscheidest selbst, ob das deine Stimmung bestimmen soll.",
+
+	"landing.finances.title": "Alles transparent",
+	"landing.finances.body": "Jeder Euro, den Vonk einnimmt und ausgibt, wird öffentlich gezeigt. Spenden, Rechnungen, Hosting-Kosten, Überweisungen an Wohltätigkeitsorganisationen — alles live lesbar, für alle. Bald auf /open.",
+
+	"landing.cta2.title": "Bereit, es zu probieren?",
+	"landing.cta2.body": "Noch in der Alpha-Phase, aber du bist willkommen. Anmeldung mit deinem Google-Konto; Apple und GitHub folgen. Du kannst immer alles exportieren oder dein Konto komplett löschen.",
+
+	"landing.footer.license": "Vonk — AGPL-3.0",
+	"landing.footer.source": "Code & Issues auf GitHub",
+	"landing.footer.europe": "Gemacht in Europa 🇪🇺"
+}
