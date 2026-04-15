@@ -24,6 +24,14 @@
 	let { post, user = null, depth = 0 }: Props = $props();
 
 	let expanded = $state(false);
+	/**
+	 * Composer visibility is tracked separately from `expanded`:
+	 *   expand → composer opens (once)
+	 *   post reply → composer closes, replies stay visible
+	 *   tap "Reageer opnieuw" → composer re-opens
+	 * Matches the user's mental model: one reply, done. No lingering form.
+	 */
+	let composing = $state(false);
 	let replies = $state<PublicPost[]>([]);
 	let cursor = $state<string | null>(null);
 	let hasMore = $state(false);
@@ -73,12 +81,16 @@
 	async function toggle() {
 		if (!canExpandInline) return;
 		expanded = !expanded;
+		composing = expanded;
 		if (expanded && !loaded) await load();
 	}
 
 	function onReplied(reply: PublicPost) {
 		replies = [...replies, reply];
 		replyCount += 1;
+		// One-shot reply: hide the composer. Thread stays visible; the user
+		// can reopen the composer via the "Reageer opnieuw" link below.
+		composing = false;
 	}
 
 	function relativeTime(iso: string): string {
@@ -163,7 +175,7 @@
 
 	{#if expanded}
 		<section id="replies-{post.uuid}" class="mt-4 border-t border-border pt-4">
-			{#if user}
+			{#if user && composing}
 				<div class="mb-3">
 					<PostComposer
 						{user}
@@ -176,9 +188,9 @@
 
 			{#if loading && replies.length === 0}
 				<p class="text-sm text-muted">Reacties laden…</p>
-			{:else if replies.length === 0}
-				<p class="text-sm text-muted">Nog geen reacties. Wees de eerste.</p>
-			{:else}
+			{:else if replies.length === 0 && !composing}
+				<p class="text-sm text-muted">Nog geen reacties.</p>
+			{:else if replies.length > 0}
 				{#each replies as r (r.uuid)}
 					<Self post={r} {user} depth={depth + 1} />
 				{/each}
@@ -192,6 +204,16 @@
 						>{loading ? 'Laden…' : 'Meer reacties'}</button>
 					</div>
 				{/if}
+			{/if}
+
+			{#if user && !composing}
+				<div class="mt-3 text-center">
+					<button
+						type="button"
+						class="text-sm font-semibold text-terracotta hover:underline"
+						onclick={() => (composing = true)}
+					>Reageer opnieuw</button>
+				</div>
 			{/if}
 		</section>
 	{/if}
