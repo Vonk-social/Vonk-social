@@ -56,10 +56,20 @@ receive funding.
 
 ## Live staging
 
-Alpha-testable at **https://vonk.openview.be**. Google sign-in, seeded
-with a handful of placeholder accounts so the feed and discover pages
-have content to render against. Expect breaking changes; the database
-may be wiped between phases.
+Alpha-testable at any of:
+
+- **https://vonk.social** (primary domain)
+- **https://www.vonk.social**
+- **https://vonk.openview.be** (original staging host)
+
+All three serve the same backend. Google sign-in works on each; OAuth
+redirect_uri is built dynamically from the `Host` header so a login
+started on `vonk.social` returns to `vonk.social`, not to whichever
+domain happens to be pinned in the server env.
+
+Seeded with a handful of placeholder accounts so the feed and discover
+pages have content. Expect breaking changes; the database may be wiped
+between phases.
 
 ## Feature matrix
 
@@ -94,11 +104,13 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 | Stories (24h, tray view, viewer with keyboard / tap-to-skip) | ✅ |
 | Snaps (view-once / view-24h ephemeral 1-to-1 media) | ✅ |
 | User search + "people you may know" (mutual-follows) | ✅ |
-| Bookmarks (private, server-side) | 🟡 backend only |
-| Reposts + quote-reposts | 🟡 backend only |
-| Pinned posts on profile (max 3) | 🟡 backend only |
-| Author stats dashboard (likes/replies/bookmarks/reposts — no impressions) | 🟡 backend only |
-| Story viewer list (author-only) | 🟡 backend only |
+| Bookmarks (private, server-side + `/bookmarks` page) | ✅ |
+| Reposts + quote-reposts (embedded original post card) | ✅ |
+| Pinned posts on profile (max 3, sorted pinned-first) | ✅ |
+| Author counters inline (likes/replies/bookmarks/reposts — no impressions) | ✅ |
+| Story viewer list (author-only 👁 button) | ✅ |
+| Share button (web Share API + clipboard fallback) | ✅ |
+| Post menu (pin/unpin + delete on your own posts) | ✅ |
 
 ### Phase 3 — E2EE, mobile, friend import ⏸
 
@@ -277,12 +289,13 @@ We're shipping in numbered phases, each merged as its own set of PRs on
 
 - **Phase 1 — Auth & Users** — ✅ merged (PR #1)
 - **Phase 2 — Posts, feed, stories, snaps, follows** — ✅ merged (PRs #2–#8)
-- **Phase 2.5 — Bookmarks / reposts / pins / author stats / story viewers** — 🟡 backend merged (PR #9), frontend next
-- **Landing & multilingual** — ✅ merged (PRs #11–#13), 15 EU languages live
-- **Instagram-style bottom nav + dark mode + `/discover`** — ✅ merged (PRs #8, #13)
-- **Staging deploy on vonk.openview.be** — ✅ live
+- **Phase 2.5 — Bookmarks / reposts / pins / author counters / story viewers** — ✅ merged (backend PR #9, frontend PR #16)
+- **Landing & multilingual (15 EU languages)** — ✅ merged (PR #11)
+- **Instagram-style bottom nav + dark mode + `/discover` + one-shot reply** — ✅ merged (PRs #8, #13–#14)
+- **Staging on vonk.openview.be** — ✅ live
+- **Primary domain vonk.social + www.vonk.social + host-aware OAuth** — ✅ merged (PR #18)
 - **Phase 3 — MLS E2EE + Capacitor mobile + friends import wizard** — 📋 planned
-- **Phase 4 — Public finances, short video, Snap Map, streaks** — ⏸ later
+- **Phase 4 — Public finances dashboard, short video, Snap Map, streaks** — ⏸ later
 
 ## License
 

@@ -114,11 +114,16 @@ impl AppConfig {
     }
 
     /// Returns the OAuth redirect URI for the Google callback.
-    pub fn google_redirect_uri(&self) -> String {
-        format!(
-            "{}/api/auth/callback/google",
-            self.api_url.trim_end_matches('/')
-        )
+    ///
+    /// `origin` overrides the configured `api_url` when present — used to
+    /// honour the actual host the user is on (e.g. a login started on
+    /// `vonk.social` returns to `vonk.social`, not to a staging host baked
+    /// into the server env). Falls back to `api_url` when no host is known.
+    pub fn google_redirect_uri(&self, origin: Option<&str>) -> String {
+        let base = origin
+            .map(|o| o.trim_end_matches('/').to_string())
+            .unwrap_or_else(|| self.api_url.trim_end_matches('/').to_string());
+        format!("{base}/api/auth/callback/google")
     }
 
     /// True when Google OAuth credentials are configured.
