@@ -132,8 +132,14 @@ async fn main() -> anyhow::Result<()> {
         .layer(TraceLayer::new_for_http())
         .with_state(state);
 
-    let addr = "0.0.0.0:8080";
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    // Port is configurable via API_PORT; default 8080 for local dev. The
+    // staging box has something else on 8080 so we bind 3501 there.
+    let port: u16 = std::env::var("API_PORT")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(8080);
+    let addr = format!("0.0.0.0:{port}");
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
     tracing::info!("Vonk API listening on {}", addr);
 
     // `into_make_service_with_connect_info` so handlers can extract client IP.
