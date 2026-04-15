@@ -110,7 +110,22 @@ impl IntoResponse for ApiError {
         let message = self.public_message();
 
         if matches!(self, Self::Internal(_) | Self::Upstream(_)) {
-            tracing::error!(error = %self, ?status, "api error");
+            // Walk the full error chain so upstream causes (e.g. the exact
+            // S3 / reqwest failure) don't get swallowed by the thiserror
+            // Display shim.
+            let chain = match &self {
+                Self::Upstream(e) | Self::Internal(e) => {
+                    let mut parts = vec![e.to_string()];
+                    let mut src: Option<&dyn std::error::Error> = e.source();
+                    while let Some(s) = src {
+                        parts.push(s.to_string());
+                        src = s.source();
+                    }
+                    parts.join(" ← ")
+                }
+                _ => self.to_string(),
+            };
+            tracing::error!(error = %self, chain = %chain, ?status, "api error");
         } else {
             tracing::debug!(error = %self, ?status, "api error");
         }
