@@ -46,18 +46,60 @@ function baseUrl(): string {
 	return browser ? '' : SERVER_API;
 }
 
+/**
+ * Client-side single-flight guard so many concurrent 401s (e.g. a feed that
+ * fires like/reply/follow together) produce exactly one `/api/auth/refresh`
+ * request rather than a stampede.
+ */
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function browserRefreshOnce(): Promise<boolean> {
+	if (!browser) return false;
+	if (!refreshInFlight) {
+		refreshInFlight = fetch('/api/auth/refresh', {
+			method: 'POST',
+			credentials: 'include'
+		})
+			.then((r) => r.ok)
+			.catch(() => false)
+			.finally(() => {
+				// Null out after the microtask so pipelined callers all see the
+				// same result before the next refresh becomes possible.
+				setTimeout(() => {
+					refreshInFlight = null;
+				}, 0);
+			});
+	}
+	return refreshInFlight;
+}
+
+function buildInit(init: RequestInit & { cookies?: string }): RequestInit {
+	const { cookies: _unused, ...rest } = init;
+	const headers = new Headers(rest.headers ?? {});
+	if (!browser && init.cookies) headers.set('cookie', init.cookies);
+	return {
+		...rest,
+		headers,
+		credentials: browser ? 'include' : undefined
+	};
+}
+
 export async function apiFetch(
 	path: string,
 	init: RequestInit & { cookies?: string } = {}
 ): Promise<Response> {
-	const { cookies, ...rest } = init;
-	const headers = new Headers(rest.headers ?? {});
-	if (!browser && cookies) headers.set('cookie', cookies);
-	return fetch(`${baseUrl()}${path}`, {
-		...rest,
-		headers,
-		credentials: browser ? 'include' : undefined
-	});
+	const url = `${baseUrl()}${path}`;
+	const res = await fetch(url, buildInit(init));
+
+	// Browser-only: transparently recover from access-token expiry. A single
+	// /api/auth/refresh produces a new vonk_access cookie; we retry the
+	// original call once. Never runs on the server (hooks.server.ts already
+	// handles refresh there and would otherwise loop).
+	if (browser && res.status === 401 && !path.startsWith('/api/auth/')) {
+		const refreshed = await browserRefreshOnce();
+		if (refreshed) return fetch(url, buildInit(init));
+	}
+	return res;
 }
 
 /** Fetch `/api/users/me`. Returns null on 401. */

@@ -39,7 +39,7 @@
 <main class="mx-auto max-w-2xl px-4 py-6">
 	<a href="/home" class="mb-4 inline-block text-sm font-semibold text-muted hover:text-ink">← Terug</a>
 
-	<PostCard post={data.post} />
+	<PostCard post={data.post} user={data.user} />
 
 	<section class="mt-6 mb-4">
 		<h2 class="mb-3 font-display text-lg font-bold text-ink">Reacties</h2>
@@ -56,7 +56,7 @@
 			<p class="text-center text-muted">Nog geen antwoorden. Jij eerst?</p>
 		{:else}
 			{#each replies as r (r.uuid)}
-				<PostCard post={r} />
+				<PostCard post={r} user={data.user} />
 			{/each}
 			{#if hasMore}
 				<div class="mt-4 text-center">
