@@ -139,13 +139,12 @@ CREATE TABLE posts (
     expires_at      TIMESTAMPTZ,               -- For stories (24h auto-delete)
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at      TIMESTAMPTZ,
-    
-    CONSTRAINT content_not_empty CHECK (
-        content IS NOT NULL OR 
-        EXISTS (SELECT 1 FROM media WHERE media.post_id = posts.id)
-        -- Enforced in application layer since CHECK can't subquery
-    )
+    deleted_at      TIMESTAMPTZ
+
+    -- NOTE: "content not empty" (either content set, or at least one media row)
+    -- is enforced in the application layer, NOT in SQL. Postgres does not
+    -- permit subqueries in CHECK constraints, so the earlier declarative
+    -- version here was rejected at migration time.
 );
 
 CREATE INDEX idx_posts_user ON posts (user_id, created_at DESC);
