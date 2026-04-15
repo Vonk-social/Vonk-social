@@ -52,8 +52,8 @@ pub struct PostAuthor {
 /// Per CLAUDE.md §7, `like_count` is **only populated when the requester is
 /// the post author** — and serialised-away entirely otherwise (via the
 /// `skip_serializing_if` below) so the field literally does not appear in
-/// non-author API responses. Impossible for the UI to display a stray count
-/// it never received.
+/// non-author API responses. `bookmark_count` + `repost_count` follow the
+/// same contract for consistency with the privacy-first positioning.
 #[derive(Debug, Serialize)]
 pub struct PublicPost {
     pub uuid: Uuid,
@@ -63,17 +63,27 @@ pub struct PublicPost {
     pub post_type: String,
     pub visibility: String,
     pub reply_to_uuid: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repost_of_uuid: Option<Uuid>,
     pub reply_count: i32,
     pub is_edited: bool,
     pub expires_at: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pinned_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     /// Did the requesting user like this post? Present on every list
     /// response to avoid N+1 client-side lookups.
     pub liked_by_me: bool,
-    /// Author-only. Number of likes on this post. Absent in the JSON when
-    /// the requester isn't the author.
+    pub bookmarked_by_me: bool,
+    pub reposted_by_me: bool,
+    /// Author-only counters. Absent from the JSON when the requester isn't
+    /// the author.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub like_count: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bookmark_count: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repost_count: Option<i32>,
 }
 
 // `MyPost` used to be a superset of `PublicPost` carrying `like_count`.
