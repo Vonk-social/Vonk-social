@@ -89,7 +89,7 @@
 			<div class="vonk-card text-center text-muted">Nog niks gepost.</div>
 		{:else}
 			{#each posts as p (p.uuid)}
-				<PostCard post={p} />
+				<PostCard post={p} user={data.user} />
 			{/each}
 			{#if hasMore}
 				<div class="mt-4 text-center">
