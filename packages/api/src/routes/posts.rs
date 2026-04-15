@@ -31,6 +31,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/posts/{uuid}/replies", get(get_replies))
         .route("/api/posts/{uuid}/like", post(like_post).delete(unlike_post))
         .route("/api/posts/{uuid}/viewed", post(mark_story_viewed))
+        .route("/api/tags/search", get(search_tags))
 }
 
 #[derive(Serialize)]
@@ -405,6 +406,70 @@ async fn unlike_post(
     }
     tx.commit().await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+// ── tag search ──────────────────────────────────────────────
+//
+// Lightweight hashtag autocomplete: scan recent posts' content for
+// `#tag` tokens, count occurrences, return the most-used ones that match
+// the prefix. No separate hashtags table yet (Phase 3 will add one when we
+// grow beyond O(10k) recent posts). Until then, this one-liner regex scan
+// on an indexed trailing window is plenty.
+
+#[derive(Deserialize)]
+struct TagSearchQuery {
+    q: String,
+    limit: Option<i64>,
+}
+
+#[derive(Serialize)]
+struct TagSuggestion {
+    tag: String,
+    count: i64,
+}
+
+async fn search_tags(
+    State(state): State<AppState>,
+    AuthUser(_me): AuthUser,
+    Query(q): Query<TagSearchQuery>,
+) -> ApiResult<Json<DataEnvelope<Vec<TagSuggestion>>>> {
+    let term = q.q.trim().trim_start_matches('#');
+    if term.is_empty() {
+        return Ok(Json(DataEnvelope { data: vec![] }));
+    }
+    let limit = q.limit.unwrap_or(8).clamp(1, 20);
+    // Escape LIKE meta-chars in the user-supplied prefix.
+    let prefix = format!(
+        "#{}%",
+        term.replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_")
+    );
+
+    let rows: Vec<(String, i64)> = sqlx::query_as(
+        r#"
+        SELECT lower(m[1]) AS tag, COUNT(*)::bigint AS c
+          FROM posts p
+          CROSS JOIN LATERAL regexp_matches(p.content, '(#[A-Za-z0-9_]{1,40})', 'g') AS m
+         WHERE p.created_at > now() - interval '90 days'
+           AND p.deleted_at IS NULL
+           AND lower(m[1]) LIKE lower($1) ESCAPE '\'
+         GROUP BY lower(m[1])
+         ORDER BY c DESC, tag ASC
+         LIMIT $2
+        "#,
+    )
+    .bind(&prefix)
+    .bind(limit)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(DataEnvelope {
+        data: rows
+            .into_iter()
+            .map(|(tag, count)| TagSuggestion { tag, count })
+            .collect(),
+    }))
 }
 
 // ── story viewed ─────────────────────────────────────────────

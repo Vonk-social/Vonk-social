@@ -22,3 +22,11 @@ export async function suggestUsers(cookies?: string): Promise<UserCard[]> {
 	if (!res.ok) throw new Error(`suggestUsers ${res.status}`);
 	return (await res.json()).data;
 }
+
+export type TagSuggestion = { tag: string; count: number };
+
+export async function searchTags(q: string): Promise<TagSuggestion[]> {
+	const res = await apiFetch(`/api/tags/search?q=${encodeURIComponent(q)}`);
+	if (!res.ok) return [];
+	return (await res.json()).data;
+}

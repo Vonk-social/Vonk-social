@@ -1,10 +1,18 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/nunito/index.css';
 
+/* Tailwind 4 automatic `dark:` variant — tied to an explicit `.dark` class on
+ * <html> so we control it via the ThemeToggle component (localStorage) rather
+ * than purely follow the OS. Initial value is the OS preference (see
+ * stores/theme.ts). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * Design system — "warm, playful, human" per CLAUDE.md §Tech Stack Details.
  * Tailwind v4 uses CSS custom properties declared in @theme to generate
- * utility classes (bg-cream, text-terracotta, …) — no separate config file.
+ * utility classes (bg-cream, text-terracotta, …). Because utility classes
+ * resolve to `var(--color-…)` at use-time, we can override the variables in
+ * the `.dark` scope below without touching the utility class names.
  */
 @theme {
 	--color-cream: #fff8f0;
@@ -16,11 +24,9 @@
 	--color-ink: #2d1f14;
 	--color-muted: #8a7766;
 	--color-border: #e9dfd1;
-	/*
-	 * Brand-spark palette — the three stops of the logo gradient
-	 * (amber → orange → magenta). Used for story rings, celebratory
-	 * moments, primary CTAs that want more pop than terracotta alone.
-	 */
+	--color-surface: #ffffff;
+
+	/* Brand-spark palette — the three stops of the logo gradient. */
 	--color-spark-amber: #fdb52a;
 	--color-spark-orange: #ff6c2f;
 	--color-spark-magenta: #d4148e;
@@ -28,16 +34,27 @@
 	--font-sans: 'Nunito Variable', ui-sans-serif, system-ui, sans-serif;
 	--font-display: 'Nunito Variable', ui-sans-serif, system-ui, sans-serif;
 
-	--radius-card: 1.25rem;      /* 20px */
-	--radius-lg: 1rem;           /* 16px */
-	--radius-button: 9999px;     /* pill */
+	--radius-card: 1.25rem;
+	--radius-lg: 1rem;
+	--radius-button: 9999px;
 }
 
 /*
- * Reusable: three-stop spark gradient for story rings, hero accents, etc.
- * Apply with `.vonk-spark` on a background, or use the CSS variable
- * `var(--gradient-spark)` in a custom declaration.
+ * Dark-mode overrides. Warm dark (brown-black, cream text) rather than
+ * pure black — matches the "human, playful" brand while still
+ * respecting comfortable contrast ratios. Terracotta + amber stay put:
+ * they read fine on both ends.
  */
+.dark {
+	--color-cream: #1a120b;
+	--color-ink: #f5ece0;
+	--color-muted: #a59786;
+	--color-border: #3a2d22;
+	--color-surface: #22180f;
+	--color-terracotta-light: #e17757;
+	--color-sage: #9cb99f;
+}
+
 :root {
 	--gradient-spark: linear-gradient(
 		135deg,
@@ -55,6 +72,9 @@ html,
 body {
 	font-family: var(--font-sans);
 	font-feature-settings: 'ss01', 'ss02';
+	background: var(--color-cream);
+	color: var(--color-ink);
+	transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Scrollbar styling for a less corporate feel */
@@ -71,9 +91,33 @@ html {
 
 /* Utility: chunky "card" aesthetic used across onboarding + profile */
 .vonk-card {
-	background: #fff;
+	background: var(--color-surface);
 	border-radius: var(--radius-card);
 	border: 1px solid var(--color-border);
 	padding: 2rem;
-	box-shadow: 0 1px 0 0 rgb(45 31 20 / 0.03), 0 8px 24px -12px rgb(45 31 20 / 0.1);
+	box-shadow:
+		0 1px 0 0 rgb(45 31 20 / 0.03),
+		0 8px 24px -12px rgb(45 31 20 / 0.1);
+}
+
+.dark .vonk-card {
+	box-shadow:
+		0 1px 0 0 rgb(0 0 0 / 0.3),
+		0 8px 24px -12px rgb(0 0 0 / 0.5);
+}
+
+/* Inputs & textareas need explicit background in dark mode — browsers keep
+ * their default white otherwise. */
+.dark input[type='text'],
+.dark input[type='search'],
+.dark input[type='email'],
+.dark input[type='url'],
+.dark input[type='number'],
+.dark input[type='password'],
+.dark input[type='file'],
+.dark textarea,
+.dark select {
+	background-color: var(--color-surface);
+	color: var(--color-ink);
+	border-color: var(--color-border);
 }

@@ -2,6 +2,7 @@
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import VisibilityPicker from './VisibilityPicker.svelte';
+	import MentionTagPicker from './MentionTagPicker.svelte';
 	import { createPost, type Visibility, type PublicPost } from '$lib/api/posts';
 	import { uploadMedia } from '$lib/api/media';
 	import { toasts } from '$lib/stores/toasts';
@@ -20,6 +21,7 @@
 	let mediaFiles = $state<File[]>([]);
 	let previews = $state<string[]>([]);
 	let posting = $state(false);
+	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
 	function onFiles(e: Event) {
 		const input = e.target as HTMLInputElement;
@@ -91,13 +93,21 @@
 >
 	<div class="flex items-start gap-3">
 		<Avatar url={user.avatar_url} name={user.display_name} size={40} />
-		<textarea
-			bind:value={content}
-			{placeholder}
-			rows={2}
-			maxlength={5000}
-			class="flex-1 resize-none rounded-xl border border-border bg-white px-3 py-2 text-ink placeholder:text-muted focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/30"
-		></textarea>
+		<div class="min-w-0 flex-1">
+			<textarea
+				bind:this={textareaEl}
+				bind:value={content}
+				{placeholder}
+				rows={2}
+				maxlength={5000}
+				class="block w-full resize-none rounded-xl border border-border bg-white px-3 py-2 text-ink placeholder:text-muted focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/30"
+			></textarea>
+			<MentionTagPicker
+				textarea={textareaEl}
+				value={content}
+				onValueChange={(v) => (content = v)}
+			/>
+		</div>
 	</div>
 
 	{#if previews.length}

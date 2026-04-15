@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import VonkLogo from '$lib/components/VonkLogo.svelte';
 	import PostCard from '$lib/components/feed/PostCard.svelte';
@@ -59,6 +60,7 @@
 			<a href="/discover" class="rounded-full p-2 hover:bg-border" aria-label="Zoek & ontdek">🔍</a>
 			<a href="/dm" class="rounded-full p-2 hover:bg-border" aria-label="Snaps">✉️</a>
 			<a href="/settings" class="rounded-full p-2 hover:bg-border" aria-label="Instellingen">⚙️</a>
+			<ThemeToggle />
 			<a
 				href="/u/{data.user.username}"
 				class="rounded-full hover:opacity-80"
