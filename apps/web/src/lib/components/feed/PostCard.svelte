@@ -2,8 +2,13 @@
 	import { untrack } from 'svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import LikeButton from './LikeButton.svelte';
+	import BookmarkButton from './BookmarkButton.svelte';
+	import RepostButton from './RepostButton.svelte';
+	import ShareButton from './ShareButton.svelte';
+	import PostMenu from './PostMenu.svelte';
 	import MediaGrid from './MediaGrid.svelte';
 	import PostComposer from './PostComposer.svelte';
+	import QuotedPost from './QuotedPost.svelte';
 	import Self from './PostCard.svelte';
 	import type { PublicPost } from '$lib/api/posts';
 	import { fetchReplies } from '$lib/api/posts';
@@ -12,11 +17,7 @@
 
 	type Props = {
 		post: PublicPost;
-		/** Current user — enables inline reply composer. Optional so public
-		 *  timelines can still render a card without composer access. */
 		user?: SessionUser | null;
-		/** Nesting depth. Replies render at depth + 1. Beyond maxDepth the
-		 *  reply button links to /post/:uuid instead of expanding inline. */
 		depth?: number;
 	};
 	const MAX_DEPTH = 1;
@@ -24,13 +25,6 @@
 	let { post, user = null, depth = 0 }: Props = $props();
 
 	let expanded = $state(false);
-	/**
-	 * Composer visibility is tracked separately from `expanded`:
-	 *   expand → composer opens (once)
-	 *   post reply → composer closes, replies stay visible
-	 *   tap "Reageer opnieuw" → composer re-opens
-	 * Matches the user's mental model: one reply, done. No lingering form.
-	 */
 	let composing = $state(false);
 	let replies = $state<PublicPost[]>([]);
 	let cursor = $state<string | null>(null);
@@ -38,6 +32,10 @@
 	let loading = $state(false);
 	let loaded = $state(false);
 	let replyCount = $state(untrack(() => post.reply_count));
+	// Pinned state tracked locally so the PostMenu can toggle it without
+	// refetching the whole feed.
+	let pinnedAt = $state(untrack(() => post.pinned_at ?? null));
+	let deleted = $state(false);
 
 	const when = $derived(relativeTime(post.created_at));
 	const visibilityLabel = $derived(
@@ -48,6 +46,13 @@
 				: 'Genoemd'
 	);
 	const canExpandInline = $derived(depth < MAX_DEPTH);
+	const isAuthor = $derived(user?.uuid === post.author.uuid);
+	const isQuoteRepost = $derived(
+		!!post.repost_of_uuid && !!post.content && post.content.trim().length > 0
+	);
+	const isPureRepost = $derived(
+		!!post.repost_of_uuid && (!post.content || post.content.trim().length === 0)
+	);
 
 	async function load() {
 		if (loading || loaded) return;
@@ -88,8 +93,6 @@
 	function onReplied(reply: PublicPost) {
 		replies = [...replies, reply];
 		replyCount += 1;
-		// One-shot reply: hide the composer. Thread stays visible; the user
-		// can reopen the composer via the "Reageer opnieuw" link below.
 		composing = false;
 	}
 
@@ -108,113 +111,172 @@
 	}
 </script>
 
-<article
-	class:ml-8={depth > 0}
-	class:border-l-2={depth > 0}
-	class:border-border={depth > 0}
-	class:pl-4={depth > 0}
-	class="vonk-card mb-4"
-	aria-label="Post van {post.author.display_name}, {when}"
->
-	<header class="flex items-center gap-3">
-		<a href="/u/{post.author.username}" class="shrink-0">
-			<Avatar url={post.author.avatar_url} name={post.author.display_name} size={44} />
-		</a>
-		<div class="min-w-0 flex-1">
-			<a href="/u/{post.author.username}" class="font-bold text-ink hover:underline">
-				{post.author.display_name}
+{#if !deleted}
+	<article
+		class:ml-8={depth > 0}
+		class:border-l-2={depth > 0}
+		class:border-border={depth > 0}
+		class:pl-4={depth > 0}
+		class="vonk-card mb-4"
+		aria-label="Post van {post.author.display_name}, {when}"
+	>
+		<!-- Pinned badge: only on profile views where pinned_at is set -->
+		{#if pinnedAt}
+			<p class="mb-2 text-xs font-semibold text-terracotta-dark">📌 Vastgemaakt</p>
+		{/if}
+
+		<!-- Pure-repost header: "@someone heeft dit gereposted" -->
+		{#if isPureRepost}
+			<p class="mb-2 text-xs font-semibold text-sage">
+				🔁 {post.author.display_name} heeft dit geboost
+			</p>
+		{/if}
+
+		<header class="flex items-start gap-3">
+			<a href="/u/{post.author.username}" class="shrink-0">
+				<Avatar url={post.author.avatar_url} name={post.author.display_name} size={44} />
 			</a>
-			<p class="text-sm text-muted">
-				@{post.author.username} · {when}
-				{#if post.is_edited} · bewerkt{/if}
-				·
+			<div class="min-w-0 flex-1">
+				<a href="/u/{post.author.username}" class="font-bold text-ink hover:underline">
+					{post.author.display_name}
+				</a>
+				<p class="text-sm text-muted">
+					@{post.author.username} · {when}
+					{#if post.is_edited} · bewerkt{/if}
+					·
+					<a
+						href="/post/{post.uuid}"
+						class="hover:underline"
+						title="Open deze post op een eigen pagina"
+					>
+						<span class="inline-block rounded-full bg-border/50 px-2 py-0.5 text-xs">
+							{visibilityLabel}
+						</span>
+					</a>
+				</p>
+			</div>
+			{#if isAuthor}
+				<PostMenu
+					postUuid={post.uuid}
+					pinned={pinnedAt !== null}
+					onPinnedChange={(p) => (pinnedAt = p ? new Date().toISOString() : null)}
+					onDeleted={() => (deleted = true)}
+				/>
+			{/if}
+		</header>
+
+		{#if post.content && !isPureRepost}
+			<p class="mt-3 whitespace-pre-wrap text-ink" style="word-break: break-word;">
+				{post.content}
+			</p>
+		{/if}
+
+		<MediaGrid media={post.media} />
+
+		<!-- Quoted post (quote-repost shows the original inside a sub-card) -->
+		{#if isQuoteRepost && post.repost_of_uuid}
+			<QuotedPost uuid={post.repost_of_uuid} />
+		{/if}
+
+		<!-- Pure-repost renders the ORIGINAL's preview as the body -->
+		{#if isPureRepost && post.repost_of_uuid}
+			<QuotedPost uuid={post.repost_of_uuid} />
+		{/if}
+
+		<footer class="mt-3 flex items-center gap-1 text-sm text-muted">
+			<LikeButton postUuid={post.uuid} initial={post.liked_by_me} count={post.like_count} />
+			{#if canExpandInline}
+				<button
+					type="button"
+					onclick={toggle}
+					aria-expanded={expanded}
+					aria-controls="replies-{post.uuid}"
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold text-muted transition-colors hover:bg-border hover:text-terracotta"
+					class:bg-border={expanded}
+				>
+					<svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M21 12c0 4.5-4 8-9 8a9.7 9.7 0 01-3.8-.75L3 21l1.25-4.5A8 8 0 013 12c0-4.4 4-8 9-8s9 3.6 9 8z"
+						/>
+					</svg>
+					<span class="tabular-nums">{replyCount}</span>
+					<span class="sr-only">{expanded ? 'Sluit reacties' : 'Open reacties'}</span>
+				</button>
+			{:else}
 				<a
 					href="/post/{post.uuid}"
-					class="hover:underline"
-					title="Open deze post op een eigen pagina"
+					class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold text-muted hover:bg-border hover:text-terracotta"
 				>
-					<span class="inline-block rounded-full bg-border/50 px-2 py-0.5 text-xs">
-						{visibilityLabel}
-					</span>
+					<svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M21 12c0 4.5-4 8-9 8a9.7 9.7 0 01-3.8-.75L3 21l1.25-4.5A8 8 0 013 12c0-4.4 4-8 9-8s9 3.6 9 8z"
+						/>
+					</svg>
+					<span class="tabular-nums">{replyCount}</span>
 				</a>
-			</p>
-		</div>
-	</header>
-
-	{#if post.content}
-		<p class="mt-3 whitespace-pre-wrap text-ink" style="word-break: break-word;">
-			{post.content}
-		</p>
-	{/if}
-
-	<MediaGrid media={post.media} />
-
-	<footer class="mt-3 flex items-center gap-2 text-sm text-muted">
-		<LikeButton postUuid={post.uuid} initial={post.liked_by_me} count={post.like_count} />
-		{#if canExpandInline}
-			<button
-				type="button"
-				onclick={toggle}
-				aria-expanded={expanded}
-				aria-controls="replies-{post.uuid}"
-				class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold hover:bg-border"
-				class:bg-border={expanded}
-			>
-				💬 <span>{replyCount}</span>
-				<span class="sr-only">{expanded ? 'Sluit reacties' : 'Open reacties'}</span>
-			</button>
-		{:else}
-			<a
-				href="/post/{post.uuid}"
-				class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-semibold hover:bg-border"
-			>
-				💬 <span>{replyCount}</span>
-			</a>
-		{/if}
-	</footer>
-
-	{#if expanded}
-		<section id="replies-{post.uuid}" class="mt-4 border-t border-border pt-4">
-			{#if user && composing}
-				<div class="mb-3">
-					<PostComposer
-						{user}
-						replyToUuid={post.uuid}
-						placeholder="Antwoord op @{post.author.username}…"
-						onPosted={onReplied}
-					/>
-				</div>
 			{/if}
+			<RepostButton
+				postUuid={post.uuid}
+				authorUsername={post.author.username}
+				initial={post.reposted_by_me}
+				count={post.repost_count}
+			/>
+			<BookmarkButton
+				postUuid={post.uuid}
+				initial={post.bookmarked_by_me}
+				count={post.bookmark_count}
+			/>
+			<span class="flex-1"></span>
+			<ShareButton postUuid={post.uuid} authorUsername={post.author.username} />
+		</footer>
 
-			{#if loading && replies.length === 0}
-				<p class="text-sm text-muted">Reacties laden…</p>
-			{:else if replies.length === 0 && !composing}
-				<p class="text-sm text-muted">Nog geen reacties.</p>
-			{:else if replies.length > 0}
-				{#each replies as r (r.uuid)}
-					<Self post={r} {user} depth={depth + 1} />
-				{/each}
-				{#if hasMore}
-					<div class="mt-2 text-center">
-						<button
-							type="button"
-							class="rounded-full border border-border px-4 py-1.5 text-sm font-semibold text-ink hover:bg-border/40"
-							disabled={loading}
-							onclick={loadMore}
-						>{loading ? 'Laden…' : 'Meer reacties'}</button>
+		{#if expanded}
+			<section id="replies-{post.uuid}" class="mt-4 border-t border-border pt-4">
+				{#if user && composing}
+					<div class="mb-3">
+						<PostComposer
+							{user}
+							replyToUuid={post.uuid}
+							placeholder="Antwoord op @{post.author.username}…"
+							onPosted={onReplied}
+						/>
 					</div>
 				{/if}
-			{/if}
 
-			{#if user && !composing}
-				<div class="mt-3 text-center">
-					<button
-						type="button"
-						class="text-sm font-semibold text-terracotta hover:underline"
-						onclick={() => (composing = true)}
-					>Reageer opnieuw</button>
-				</div>
-			{/if}
-		</section>
-	{/if}
-</article>
+				{#if loading && replies.length === 0}
+					<p class="text-sm text-muted">Reacties laden…</p>
+				{:else if replies.length === 0 && !composing}
+					<p class="text-sm text-muted">Nog geen reacties.</p>
+				{:else if replies.length > 0}
+					{#each replies as r (r.uuid)}
+						<Self post={r} {user} depth={depth + 1} />
+					{/each}
+					{#if hasMore}
+						<div class="mt-2 text-center">
+							<button
+								type="button"
+								class="rounded-full border border-border px-4 py-1.5 text-sm font-semibold text-ink hover:bg-border/40"
+								disabled={loading}
+								onclick={loadMore}
+							>{loading ? 'Laden…' : 'Meer reacties'}</button>
+						</div>
+					{/if}
+				{/if}
+
+				{#if user && !composing}
+					<div class="mt-3 text-center">
+						<button
+							type="button"
+							class="text-sm font-semibold text-terracotta hover:underline"
+							onclick={() => (composing = true)}
+						>Reageer opnieuw</button>
+					</div>
+				{/if}
+			</section>
+		{/if}
+	</article>
+{/if}
