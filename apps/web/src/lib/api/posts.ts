@@ -20,7 +20,11 @@ export type PostAuthor = {
 	avatar_url?: string | null;
 };
 
-/** Public post shape. NEVER has `like_count` — server strips it per CLAUDE.md §7. */
+/**
+ * Public post shape. `like_count` is only present when the requester is the
+ * post's author (server-side `#[serde(skip_serializing_if)]`). Display code
+ * must check for presence before rendering — absence means "not yours".
+ */
 export type PublicPost = {
 	uuid: string;
 	author: PostAuthor;
@@ -34,6 +38,8 @@ export type PublicPost = {
 	expires_at?: string | null;
 	created_at: string;
 	liked_by_me: boolean;
+	/** Author-only. Omitted entirely when the requester isn't the author. */
+	like_count?: number;
 };
 
 export type CreatePostBody = {

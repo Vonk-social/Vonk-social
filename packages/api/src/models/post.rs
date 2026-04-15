@@ -47,8 +47,13 @@ pub struct PostAuthor {
     pub avatar_url: Option<String>,
 }
 
-/// Public post representation. **Never includes `like_count`** — per
-/// CLAUDE.md §7, only the author may see the like count (see `MyPost`).
+/// Public post representation.
+///
+/// Per CLAUDE.md §7, `like_count` is **only populated when the requester is
+/// the post author** — and serialised-away entirely otherwise (via the
+/// `skip_serializing_if` below) so the field literally does not appear in
+/// non-author API responses. Impossible for the UI to display a stray count
+/// it never received.
 #[derive(Debug, Serialize)]
 pub struct PublicPost {
     pub uuid: Uuid,
@@ -65,14 +70,13 @@ pub struct PublicPost {
     /// Did the requesting user like this post? Present on every list
     /// response to avoid N+1 client-side lookups.
     pub liked_by_me: bool,
+    /// Author-only. Number of likes on this post. Absent in the JSON when
+    /// the requester isn't the author.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub like_count: Option<i32>,
 }
 
-/// Author-only post representation. Superset of `PublicPost` with
-/// `like_count` exposed. Used by the upcoming "my posts" endpoint.
-#[allow(dead_code)]
-#[derive(Debug, Serialize)]
-pub struct MyPost {
-    #[serde(flatten)]
-    pub public: PublicPost,
-    pub like_count: i32,
-}
+// `MyPost` used to be a superset of `PublicPost` carrying `like_count`.
+// That responsibility has moved onto `PublicPost` itself (with an Option +
+// skip_serializing_if), so this helper is gone. Keeping the trail via git
+// history rather than a deprecated stub.

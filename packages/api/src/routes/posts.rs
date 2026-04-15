@@ -465,8 +465,8 @@ async fn load_public_post(state: &AppState, viewer_id: i64, post_id: i64) -> Api
     let row = sqlx::query(
         r#"
         SELECT
-            p.uuid, p.content, p.post_type, p.visibility,
-            p.reply_count, p.is_edited, p.expires_at, p.created_at,
+            p.uuid, p.user_id AS author_id, p.content, p.post_type, p.visibility,
+            p.reply_count, p.like_count, p.is_edited, p.expires_at, p.created_at,
             u.uuid AS author_uuid, u.username AS author_username,
             u.display_name AS author_display_name, u.avatar_url AS author_avatar_url,
             (SELECT uuid FROM posts r WHERE r.id = p.reply_to_id) AS reply_to_uuid,
@@ -486,6 +486,13 @@ async fn load_public_post(state: &AppState, viewer_id: i64, post_id: i64) -> Api
         .next()
         .map(|(_, v)| v)
         .unwrap_or_default();
+
+    let author_id: i64 = row.try_get("author_id").unwrap_or(0);
+    let like_count = if author_id == viewer_id {
+        row.try_get::<i32, _>("like_count").ok()
+    } else {
+        None
+    };
 
     Ok(PublicPost {
         uuid: row.try_get("uuid").unwrap_or_else(|_| Uuid::nil()),
@@ -508,5 +515,6 @@ async fn load_public_post(state: &AppState, viewer_id: i64, post_id: i64) -> Api
         expires_at: row.try_get("expires_at").ok(),
         created_at: row.try_get("created_at").unwrap_or_else(|_| Utc::now()),
         liked_by_me: row.try_get::<bool, _>("liked_by_me").unwrap_or(false),
+        like_count,
     })
 }
