@@ -56,11 +56,9 @@
 				class="inline-flex items-center gap-1.5 rounded-full bg-terracotta px-4 py-2 text-sm font-semibold text-white hover:bg-terracotta-dark"
 				aria-label="Camera"
 			>📷 Camera</a>
-			<a
-				href="/dm"
-				class="rounded-full p-2 hover:bg-border"
-				aria-label="Snaps"
-			>✉️</a>
+			<a href="/discover" class="rounded-full p-2 hover:bg-border" aria-label="Zoek & ontdek">🔍</a>
+			<a href="/dm" class="rounded-full p-2 hover:bg-border" aria-label="Snaps">✉️</a>
+			<a href="/settings" class="rounded-full p-2 hover:bg-border" aria-label="Instellingen">⚙️</a>
 			<a
 				href="/u/{data.user.username}"
 				class="rounded-full hover:opacity-80"
@@ -68,9 +66,6 @@
 			>
 				<Avatar url={data.user.avatar_url} name={data.user.display_name} size={36} />
 			</a>
-			<form method="POST" action="?/logout">
-				<Button type="submit" variant="ghost">Uit</Button>
-			</form>
 		</nav>
 	</header>
 

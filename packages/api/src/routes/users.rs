@@ -17,6 +17,7 @@ use aws_sdk_s3::primitives::ByteStream;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use sqlx::Row;
 use validator::Validate;
 
 use crate::auth::AuthUser;
@@ -43,6 +44,8 @@ pub fn router() -> Router<AppState> {
         // Larger body limit for the avatar endpoint.
         .layer(DefaultBodyLimit::max(AVATAR_MAX_BYTES + 128 * 1024))
         .route("/api/users/check-username", get(check_username))
+        .route("/api/users/search", get(search_users))
+        .route("/api/users/suggestions", get(suggest_users))
         .route("/api/users/{username}", get(public_profile))
 }
 
@@ -369,4 +372,157 @@ async fn delete_avatar(
     // We deliberately leave the S3 objects in place — cleanup is handled by a
     // future background sweep so we can recover on accidental delete.
     Ok(StatusCode::NO_CONTENT)
+}
+
+// ── search / suggestions ─────────────────────────────────────
+
+#[derive(Serialize)]
+struct UserCardRow {
+    uuid: uuid::Uuid,
+    username: String,
+    display_name: String,
+    bio: Option<String>,
+    avatar_url: Option<String>,
+    is_private: bool,
+    follow_state: &'static str,
+}
+
+#[derive(Deserialize)]
+struct SearchQuery {
+    q: String,
+    limit: Option<i64>,
+}
+
+/// Fuzzy-ish search on username + display_name via ILIKE. Self + deleted +
+/// suspended users are excluded. Ordered so that username-prefix matches rank
+/// above substring matches. Future: swap to `pg_trgm` for proper fuzziness.
+async fn search_users(
+    State(state): State<AppState>,
+    AuthUser(me): AuthUser,
+    Query(q): Query<SearchQuery>,
+) -> ApiResult<Json<DataEnvelope<Vec<UserCardRow>>>> {
+    let term = q.q.trim();
+    if term.len() < 2 {
+        return Ok(Json(DataEnvelope { data: vec![] }));
+    }
+    let limit = q.limit.unwrap_or(20).clamp(1, 50);
+    let pattern = format!("%{}%", term.replace('%', "\\%").replace('_', "\\_"));
+    let prefix = format!("{}%", term.replace('%', "\\%").replace('_', "\\_"));
+
+    let rows = sqlx::query(
+        r#"
+        SELECT u.id, u.uuid, u.username, u.display_name, u.bio, u.avatar_url,
+               COALESCE(u.is_private, false) AS is_private,
+               COALESCE(f.status, '') AS follow_status
+          FROM users u
+          LEFT JOIN follows f
+            ON f.follower_id = $1 AND f.following_id = u.id
+         WHERE u.id != $1
+           AND u.deleted_at IS NULL
+           AND COALESCE(u.is_suspended, false) = false
+           AND (u.username ILIKE $2 OR u.display_name ILIKE $2)
+         ORDER BY
+           (u.username ILIKE $3) DESC,
+           (u.display_name ILIKE $3) DESC,
+           u.username ASC
+         LIMIT $4
+        "#,
+    )
+    .bind(me.id)
+    .bind(&pattern)
+    .bind(&prefix)
+    .bind(limit)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(DataEnvelope {
+        data: rows
+            .into_iter()
+            .map(|r| UserCardRow {
+                uuid: r.try_get("uuid").unwrap_or_else(|_| uuid::Uuid::nil()),
+                username: r.try_get("username").unwrap_or_default(),
+                display_name: r.try_get("display_name").unwrap_or_default(),
+                bio: r.try_get("bio").ok(),
+                avatar_url: r.try_get("avatar_url").ok(),
+                is_private: r.try_get("is_private").unwrap_or(false),
+                follow_state: match r.try_get::<String, _>("follow_status").as_deref() {
+                    Ok("active") => "active",
+                    Ok("pending") => "pending",
+                    _ => "none",
+                },
+            })
+            .collect(),
+    }))
+}
+
+/// Simple "people you may know": users you don't already follow, ranked by
+/// how many of the people YOU follow also follow them. Fallback: newest users
+/// when you follow nobody yet.
+///
+/// This is a Phase-3 placeholder — the real implementation lives in a
+/// `suggested_connections` materialized view refreshed nightly.
+async fn suggest_users(
+    State(state): State<AppState>,
+    AuthUser(me): AuthUser,
+) -> ApiResult<Json<DataEnvelope<Vec<UserCardRow>>>> {
+    let rows = sqlx::query(
+        r#"
+        WITH my_follows AS (
+            SELECT following_id FROM follows
+             WHERE follower_id = $1 AND status = 'active'
+        ),
+        mutuals AS (
+            SELECT f.following_id AS candidate_id, COUNT(*) AS score
+              FROM follows f
+             WHERE f.follower_id IN (SELECT following_id FROM my_follows)
+               AND f.status = 'active'
+               AND f.following_id != $1
+               AND f.following_id NOT IN (SELECT following_id FROM my_follows)
+             GROUP BY f.following_id
+        ),
+        fallback AS (
+            SELECT u.id AS candidate_id, 0::bigint AS score
+              FROM users u
+             WHERE u.id != $1
+               AND u.deleted_at IS NULL
+               AND COALESCE(u.is_suspended, false) = false
+               AND u.id NOT IN (SELECT following_id FROM my_follows)
+             ORDER BY u.created_at DESC
+             LIMIT 20
+        ),
+        candidates AS (
+            SELECT candidate_id, score FROM mutuals
+            UNION ALL
+            SELECT candidate_id, score FROM fallback
+             WHERE NOT EXISTS (SELECT 1 FROM mutuals)
+        )
+        SELECT u.uuid, u.username, u.display_name, u.bio, u.avatar_url,
+               COALESCE(u.is_private, false) AS is_private,
+               c.score
+          FROM candidates c
+          JOIN users u ON u.id = c.candidate_id
+         WHERE u.deleted_at IS NULL
+           AND COALESCE(u.is_suspended, false) = false
+         ORDER BY c.score DESC, u.created_at DESC
+         LIMIT 20
+        "#,
+    )
+    .bind(me.id)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(DataEnvelope {
+        data: rows
+            .into_iter()
+            .map(|r| UserCardRow {
+                uuid: r.try_get("uuid").unwrap_or_else(|_| uuid::Uuid::nil()),
+                username: r.try_get("username").unwrap_or_default(),
+                display_name: r.try_get("display_name").unwrap_or_default(),
+                bio: r.try_get("bio").ok(),
+                avatar_url: r.try_get("avatar_url").ok(),
+                is_private: r.try_get("is_private").unwrap_or(false),
+                follow_state: "none",
+            })
+            .collect(),
+    }))
 }
