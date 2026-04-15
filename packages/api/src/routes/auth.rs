@@ -297,14 +297,23 @@ async fn refresh(
         .parse()
         .map_err(|_| ApiError::Unauthenticated)?;
 
-    // Validate session and load the user.
-    let row: Option<(i64,)> = sqlx::query_as(
-        "SELECT user_id FROM sessions WHERE id = $1 AND expires_at > now()",
+    // Look up the session, including its rotation state.
+    let row: Option<(i64, Option<Uuid>)> = sqlx::query_as(
+        "SELECT user_id, rotated_to FROM sessions \
+         WHERE id = $1 AND expires_at > now()",
     )
     .bind(session_id)
     .fetch_optional(&state.db)
     .await?;
-    let user_id = row.ok_or(ApiError::Unauthenticated)?.0;
+    let (user_id, rotated_to) = row.ok_or(ApiError::Unauthenticated)?;
+
+    // Reuse detection: this refresh cookie was already redeemed. Kill
+    // the lineage and tell the caller to log in from scratch.
+    if rotated_to.is_some() {
+        let _ = invalidate_session_chain(&state, session_id).await;
+        tracing::warn!(?session_id, "refresh-token reuse detected — chain revoked");
+        return Err(ApiError::Unauthenticated);
+    }
 
     let user = sqlx::query_as::<_, User>(&format!(
         "SELECT {cols} FROM users WHERE id = $1 AND deleted_at IS NULL",
@@ -319,17 +328,67 @@ async fn refresh(
         return Err(ApiError::Forbidden);
     }
 
-    // Bump last_active.
-    sqlx::query("UPDATE sessions SET last_active = now() WHERE id = $1")
-        .bind(session_id)
-        .execute(&state.db)
-        .await?;
+    // Mint a new session row and mark the old one rotated. Both updates
+    // happen in a transaction so an error doesn't leave a dangling
+    // rotated-but-no-successor state.
+    let new_session_id = Uuid::new_v4();
+    let new_expires_at = Utc::now()
+        + ChronoDuration::from_std(state.config.refresh_ttl)
+            .unwrap_or(ChronoDuration::days(30));
 
-    let access = jwt::mint(&user, session_id, &state.config)
+    let mut tx = state.db.begin().await?;
+    sqlx::query(
+        "INSERT INTO sessions (id, user_id, device_name, ip_hash, expires_at) \
+         SELECT $1, user_id, device_name, ip_hash, $2 \
+           FROM sessions WHERE id = $3",
+    )
+    .bind(new_session_id)
+    .bind(new_expires_at)
+    .bind(session_id)
+    .execute(&mut *tx)
+    .await?;
+    sqlx::query(
+        "UPDATE sessions SET rotated_to = $1, rotated_at = now(), last_active = now() \
+         WHERE id = $2",
+    )
+    .bind(new_session_id)
+    .bind(session_id)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    // Issue the new cookie pair against the new session id.
+    let access = jwt::mint(&user, new_session_id, &state.config)
         .map_err(|e| ApiError::Internal(anyhow::anyhow!("mint jwt: {e}")))?;
 
-    let jar = jar.add(cookies::access(access, &state.config));
+    let jar = jar
+        .add(cookies::access(access, &state.config))
+        .add(cookies::refresh(new_session_id.to_string(), &state.config));
     Ok((jar, StatusCode::NO_CONTENT))
+}
+
+/// Walk the rotation chain (forward + backward) and delete every
+/// session in it. Used when a rotated-already token is presented a second
+/// time — classic reuse-detection response.
+async fn invalidate_session_chain(state: &AppState, seed: Uuid) -> ApiResult<()> {
+    sqlx::query(
+        r#"
+        WITH RECURSIVE chain AS (
+            SELECT id, rotated_to FROM sessions WHERE id = $1
+          UNION
+            SELECT s.id, s.rotated_to
+              FROM sessions s JOIN chain c ON s.id = c.rotated_to
+          UNION
+            SELECT s.id, s.rotated_to
+              FROM sessions s JOIN chain c ON s.rotated_to = c.id
+        )
+        DELETE FROM sessions WHERE id IN (SELECT id FROM chain)
+        "#,
+    )
+    .bind(seed)
+    .execute(&state.db)
+    .await?;
+    Ok(())
 }
 
 // ── /logout ──────────────────────────────────────────────────
