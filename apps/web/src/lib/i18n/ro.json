@@ -1,0 +1,32 @@
+{
+	"landing.hero.title": "Rețea socială, dar pentru oameni",
+	"landing.hero.subtitle": "Fără reclame. Fără algoritm. Fără vânzări de date. Doar un loc pentru a împărtăși bucurii și tristeți cu cei care contează. Open source, al tuturor, pentru toți.",
+	"landing.cta.login": "Conectare cu Google",
+	"landing.cta.learn": "Află de ce ↓",
+	"landing.badge": "Făcut în Europa 🇪🇺",
+
+	"landing.why.title": "De ce există Vonk",
+	"landing.why.intro": "Marile platforme nu mai sunt piețe de sat, ci străzi comerciale unde tu ești manechinul din vitrină. Vonk e diferit — fără scop lucrativ, fără acționari, fără vânzări de date.",
+
+	"landing.pillar1.title": "Tu nu ești produsul",
+	"landing.pillar1.body": "Criptare end-to-end pentru mesajele directe. Metadatele fotografiilor (ca GPS) sunt eliminate automat. Adresele IP sunt șterse după 48 de ore. Fără trackere, fără fingerprinting. Punct.",
+
+	"landing.pillar2.title": "100% open source",
+	"landing.pillar2.body": "Fiecare linie de cod e publică, sub licența AGPL-3.0. Fără trackere ascunse, fără agendă ascunsă. Fiecare modificare e vizibilă. Verifică tu sau roagă pe cineva în care ai încredere.",
+
+	"landing.pillar3.title": "Surplusul către cauze bune",
+	"landing.pillar3.body": "Donațiile acoperă hostingul. Restul merge către organizații pentru pacea mondială și sănătate. Comunitatea Vonk votează anual unde. Fără dividende către acționari — nu există.",
+
+	"landing.pillar4.title": "Ritmul tău, feed-ul tău",
+	"landing.pillar4.body": "Cronologie reală. Fără algoritm de engagement, fără bucle de dopamină, fără «sugerate pentru tine». Like-urile? Doar autorul vede câte persoane au apreciat o postare — tu decizi dacă asta îți afectează starea.",
+
+	"landing.finances.title": "Totul transparent",
+	"landing.finances.body": "Fiecare euro pe care Vonk îl primește și îl cheltuiește este afișat public. Donații, facturi, costuri de hosting, transferuri către caritate — totul lizibil în direct, de oricine. În curând la /open.",
+
+	"landing.cta2.title": "Gata să încerci?",
+	"landing.cta2.body": "Încă în alpha, dar ești binevenit/ă. Conectează-te cu contul Google; Apple și GitHub urmează. Poți oricând exporta tot sau șterge contul complet.",
+
+	"landing.footer.license": "Vonk — AGPL-3.0",
+	"landing.footer.source": "Cod & issues pe GitHub",
+	"landing.footer.europe": "Făcut în Europa 🇪🇺"
+}

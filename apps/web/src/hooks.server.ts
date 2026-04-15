@@ -1,10 +1,11 @@
 import type { Handle } from '@sveltejs/kit';
 import { fetchMe } from '$lib/api';
+import { isLocale, pickLocaleFromHeader } from '$lib/i18n';
 
 const API_INTERNAL = 'http://localhost:8080';
 
 /**
- * Populate `event.locals.user` on every request.
+ * Populate `event.locals.user` + `event.locals.locale` on every request.
  *
  * Failures are logged and swallowed: a broken hooks layer must never turn a
  * normal page load into a 500. If we can't resolve the user, we just leave
@@ -13,46 +14,57 @@ const API_INTERNAL = 'http://localhost:8080';
 export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.user = null;
 
+	// ── Locale resolution ──────────────────────────────────────
+	// Precedence: explicit cookie → Accept-Language → 'nl'.
+	// When a user logs in, their user.locale overrides this downstream.
+	const cookieLocale = event.cookies.get('vonk_locale');
+	const headerLocale = pickLocaleFromHeader(event.request.headers.get('accept-language'));
+	event.locals.locale = isLocale(cookieLocale) ? cookieLocale : headerLocale;
+
 	const incomingCookies = event.request.headers.get('cookie') ?? '';
-	if (!incomingCookies.includes('vonk_access') && !incomingCookies.includes('vonk_refresh')) {
-		return resolve(event);
-	}
-
-	try {
-		let user = await fetchMe(incomingCookies).catch((e) => {
-			console.warn('[hooks] fetchMe failed:', (e as Error).message);
-			return null;
-		});
-
-		// If access is expired but we have a refresh, try to mint a new one.
-		if (!user && incomingCookies.includes('vonk_refresh')) {
-			const refresh = await fetch(`${API_INTERNAL}/api/auth/refresh`, {
-				method: 'POST',
-				headers: { cookie: incomingCookies }
-			}).catch((e) => {
-				console.warn('[hooks] refresh fetch failed:', (e as Error).message);
+	if (incomingCookies.includes('vonk_access') || incomingCookies.includes('vonk_refresh')) {
+		try {
+			let user = await fetchMe(incomingCookies).catch((e) => {
+				console.warn('[hooks] fetchMe failed:', (e as Error).message);
 				return null;
 			});
 
-			if (refresh?.ok) {
-				copySetCookies(refresh, event);
+			if (!user && incomingCookies.includes('vonk_refresh')) {
+				const refresh = await fetch(`${API_INTERNAL}/api/auth/refresh`, {
+					method: 'POST',
+					headers: { cookie: incomingCookies }
+				}).catch((e) => {
+					console.warn('[hooks] refresh fetch failed:', (e as Error).message);
+					return null;
+				});
 
-				// Retry fetchMe with the new access cookie.
-				const newAccess = event.cookies.get('vonk_access');
-				if (newAccess) {
-					user = await fetchMe(mergeCookie(incomingCookies, 'vonk_access', newAccess)).catch(
-						() => null
-					);
+				if (refresh?.ok) {
+					copySetCookies(refresh, event);
+
+					const newAccess = event.cookies.get('vonk_access');
+					if (newAccess) {
+						user = await fetchMe(
+							mergeCookie(incomingCookies, 'vonk_access', newAccess)
+						).catch(() => null);
+					}
 				}
 			}
-		}
 
-		if (user) event.locals.user = user;
-	} catch (err) {
-		console.error('[hooks] unexpected error (swallowed):', err);
+			if (user) {
+				event.locals.user = user;
+				if (user.locale && isLocale(user.locale)) {
+					event.locals.locale = user.locale;
+				}
+			}
+		} catch (err) {
+			console.error('[hooks] unexpected error (swallowed):', err);
+		}
 	}
 
-	return resolve(event);
+	return resolve(event, {
+		transformPageChunk: ({ html }) =>
+			html.replace('%sveltekit.lang%', event.locals.locale ?? 'nl')
+	});
 };
 
 /** Copy Set-Cookie headers from an upstream `fetch` response into the SvelteKit cookie jar. */
