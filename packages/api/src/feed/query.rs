@@ -44,8 +44,8 @@ fn base_sql(author_predicate: &str, cursor_clause: &str, hide_stories: bool) -> 
     format!(
         r#"
         SELECT
-            p.id, p.uuid, p.content, p.post_type, p.visibility,
-            p.reply_count, p.is_edited, p.expires_at, p.created_at,
+            p.id, p.uuid, p.user_id AS author_id, p.content, p.post_type, p.visibility,
+            p.reply_count, p.like_count, p.is_edited, p.expires_at, p.created_at,
             u.uuid AS author_uuid, u.username AS author_username,
             u.display_name AS author_display_name, u.avatar_url AS author_avatar_url,
             (SELECT uuid FROM posts r WHERE r.id = p.reply_to_id) AS reply_to_uuid,
@@ -97,12 +97,12 @@ pub async fn fetch_feed(
                 .bind(c.id)
                 .fetch_all(db)
                 .await?;
-            build_page(db, rows, limit).await
+            build_page(db, rows, requester_id, limit).await
         }
         None => {
             let sql = format!("{body} LIMIT {lim}", body = base_sql(author, "", true), lim = limit + 1);
             let rows = sqlx::query(&sql).bind(requester_id).fetch_all(db).await?;
-            build_page(db, rows, limit).await
+            build_page(db, rows, requester_id, limit).await
         }
     }
 }
@@ -130,7 +130,7 @@ pub async fn fetch_user_posts(
                 .bind(c.id)
                 .fetch_all(db)
                 .await?;
-            build_page(db, rows, limit).await
+            build_page(db, rows, requester_id, limit).await
         }
         None => {
             let sql = format!(
@@ -143,7 +143,7 @@ pub async fn fetch_user_posts(
                 .bind(author_id)
                 .fetch_all(db)
                 .await?;
-            build_page(db, rows, limit).await
+            build_page(db, rows, requester_id, limit).await
         }
     }
 }
@@ -173,7 +173,7 @@ pub async fn fetch_replies(
                 .bind(c.id)
                 .fetch_all(db)
                 .await?;
-            build_page(db, rows, limit).await
+            build_page(db, rows, requester_id, limit).await
         }
         None => {
             let sql = format!(
@@ -186,7 +186,7 @@ pub async fn fetch_replies(
                 .bind(parent_id)
                 .fetch_all(db)
                 .await?;
-            build_page(db, rows, limit).await
+            build_page(db, rows, requester_id, limit).await
         }
     }
 }
@@ -194,6 +194,7 @@ pub async fn fetch_replies(
 async fn build_page(
     db: &PgPool,
     rows: Vec<sqlx::postgres::PgRow>,
+    requester_id: i64,
     limit: i64,
 ) -> ApiResult<Page<PublicPost>> {
     let has_more = rows.len() as i64 > limit;
@@ -212,8 +213,17 @@ async fn build_page(
     let mut media_map = media_by_post;
     for r in shown {
         let id: i64 = r.try_get("id").unwrap_or(0);
+        let author_id: i64 = r.try_get("author_id").unwrap_or(0);
         let created_at: DateTime<Utc> = r.try_get("created_at").unwrap_or_else(|_| Utc::now());
         last_row_opt = Some((created_at, id));
+
+        // Author-only: like_count surfaced in the JSON when the requester
+        // is the post's author; None otherwise, which serde skips entirely.
+        let like_count = if author_id == requester_id {
+            r.try_get::<i32, _>("like_count").ok()
+        } else {
+            None
+        };
 
         items.push(PublicPost {
             uuid: r.try_get("uuid").unwrap_or_else(|_| Uuid::nil()),
@@ -236,6 +246,7 @@ async fn build_page(
             expires_at: r.try_get("expires_at").ok(),
             created_at,
             liked_by_me: r.try_get::<bool, _>("liked_by_me").unwrap_or(false),
+            like_count,
         });
     }
 

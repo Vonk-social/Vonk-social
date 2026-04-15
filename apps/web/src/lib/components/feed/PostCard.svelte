@@ -138,7 +138,7 @@
 	<MediaGrid media={post.media} />
 
 	<footer class="mt-3 flex items-center gap-2 text-sm text-muted">
-		<LikeButton postUuid={post.uuid} initial={post.liked_by_me} />
+		<LikeButton postUuid={post.uuid} initial={post.liked_by_me} count={post.like_count} />
 		{#if canExpandInline}
 			<button
 				type="button"
