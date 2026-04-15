@@ -84,8 +84,15 @@
 	}
 </script>
 
+<!--
+	In reply mode (replyToUuid set), render without the big vonk-card so
+	the composer doesn't look like an empty post sitting inside the thread.
+	Top-level composer (feed / home) keeps the prominent card styling.
+-->
 <form
-	class="vonk-card"
+	class={replyToUuid
+		? 'rounded-xl border border-border bg-surface/60 p-3'
+		: 'vonk-card'}
 	onsubmit={(e) => {
 		e.preventDefault();
 		submit();
