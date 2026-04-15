@@ -1,0 +1,79 @@
+version: "3.9"
+
+# ============================================================
+# VONK — Development Docker Compose
+# Usage: docker compose -f docker-compose.dev.yml up -d
+# ============================================================
+
+services:
+  # ── Database ──────────────────────────────────────────────
+  vonk-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vonk
+      POSTGRES_USER: vonk
+      POSTGRES_PASSWORD: vonk_dev_password
+    volumes:
+      - vonk-pgdata-dev:/var/lib/postgresql/data
+      - ./packages/db/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vonk"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Cache ─────────────────────────────────────────────────
+  vonk-cache:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+
+  # ── Object Storage ────────────────────────────────────────
+  vonk-media:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: vonkdev
+      MINIO_ROOT_PASSWORD: vonkdev123
+    volumes:
+      - vonk-media-dev:/data
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+
+  # ── MinIO bucket init ─────────────────────────────────────
+  vonk-media-init:
+    image: minio/mc:latest
+    depends_on:
+      vonk-media:
+        condition: service_started
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      mc alias set vonk http://vonk-media:9000 vonkdev vonkdev123;
+      mc mb --ignore-existing vonk/vonk-media;
+      mc anonymous set download vonk/vonk-media;
+      echo 'MinIO bucket ready';
+      "
+    restart: "no"
+
+  # ── Mailpit (local email testing) ─────────────────────────
+  vonk-mail:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"   # SMTP
+      - "127.0.0.1:8025:8025"   # Web UI
+
+volumes:
+  vonk-pgdata-dev:
+  vonk-media-dev:

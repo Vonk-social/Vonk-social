@@ -1,0 +1,38 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Secrets
+secrets/
+
+# Dependencies
+node_modules/
+target/
+
+# Build
+dist/
+build/
+.svelte-kit/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+vonk-pgdata/
+vonk-media/
+
+# Logs
+*.log
+logs/
+
+# Rust
+target/
+Cargo.lock
