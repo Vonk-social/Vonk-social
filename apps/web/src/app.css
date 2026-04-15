@@ -121,3 +121,9 @@ html {
 	color: var(--color-ink);
 	border-color: var(--color-border);
 }
+
+/* Reserve space for the fixed BottomNav so content isn't hidden under it.
+ * Height ≈ 64px (py-1 + 56px content) + safe-area. */
+.with-bottom-nav {
+	padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}

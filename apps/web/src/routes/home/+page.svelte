@@ -1,5 +1,4 @@
 <script lang="ts">
-	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import Toast from '$lib/components/ui/Toast.svelte';
@@ -45,29 +44,15 @@
 </svelte:head>
 
 <main class="mx-auto max-w-2xl px-4 py-6">
-	<!-- Top bar -->
+	<!-- Slim top bar — primary nav lives in the BottomNav -->
 	<header class="mb-6 flex items-center justify-between">
 		<a href="/home" class="flex items-center gap-2">
 			<VonkLogo size={32} />
 			<span class="font-display text-xl font-bold text-ink">Vonk</span>
 		</a>
 		<nav class="flex items-center gap-1">
-			<a
-				href="/camera"
-				class="inline-flex items-center gap-1.5 rounded-full bg-terracotta px-4 py-2 text-sm font-semibold text-white hover:bg-terracotta-dark"
-				aria-label="Camera"
-			>📷 Camera</a>
-			<a href="/discover" class="rounded-full p-2 hover:bg-border" aria-label="Zoek & ontdek">🔍</a>
-			<a href="/dm" class="rounded-full p-2 hover:bg-border" aria-label="Snaps">✉️</a>
 			<a href="/settings" class="rounded-full p-2 hover:bg-border" aria-label="Instellingen">⚙️</a>
 			<ThemeToggle />
-			<a
-				href="/u/{data.user.username}"
-				class="rounded-full hover:opacity-80"
-				aria-label="Mijn profiel"
-			>
-				<Avatar url={data.user.avatar_url} name={data.user.display_name} size={36} />
-			</a>
 		</nav>
 	</header>
 
