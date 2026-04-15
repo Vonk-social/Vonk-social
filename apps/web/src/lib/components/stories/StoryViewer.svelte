@@ -1,11 +1,16 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
+	import StoryViewersList from './StoryViewersList.svelte';
 	import { markStoryViewed } from '$lib/api/posts';
 	import type { StoryGroup, StoryItem } from '$lib/api/feed';
+	import type { SessionUser } from '$lib/api/core';
 
-	type Props = { group: StoryGroup; onClose: () => void };
-	let { group, onClose }: Props = $props();
+	type Props = { group: StoryGroup; user?: SessionUser | null; onClose: () => void };
+	let { group, user = null, onClose }: Props = $props();
+
+	let viewersOpen = $state(false);
+	const isAuthor = $derived(user?.uuid === group.author.uuid);
 
 	const DURATION_MS = 5000;
 
@@ -108,12 +113,22 @@
 			<Avatar url={group.author.avatar_url} name={group.author.display_name} size={32} />
 			<span class="font-semibold">{group.author.display_name}</span>
 		</div>
-		<button
-			type="button"
-			class="rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/20"
-			onclick={onClose}
-			aria-label="Sluit"
-		>✕</button>
+		<div class="flex items-center gap-2">
+			{#if isAuthor}
+				<button
+					type="button"
+					class="rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/20"
+					onclick={() => (viewersOpen = true)}
+					aria-label="Wie heeft dit gezien"
+				>👁</button>
+			{/if}
+			<button
+				type="button"
+				class="rounded-full bg-white/10 px-3 py-1 text-white hover:bg-white/20"
+				onclick={onClose}
+				aria-label="Sluit"
+			>✕</button>
+		</div>
 	</div>
 
 	<!-- Media -->
@@ -146,3 +161,7 @@
 		></button>
 	</div>
 </div>
+
+{#if viewersOpen && item}
+	<StoryViewersList storyUuid={item.uuid} onClose={() => (viewersOpen = false)} />
+{/if}

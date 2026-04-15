@@ -70,12 +70,16 @@
 					</a>
 				</div>
 			</div>
-			<div class="self-start">
+			<div class="flex flex-col gap-2 self-start">
 				{#if data.profile.follow_state === 'self'}
 					<a
 						href="/settings"
-						class="inline-block rounded-full border border-border bg-white px-5 py-2 text-sm font-semibold text-ink hover:bg-border/40"
+						class="inline-block rounded-full border border-border bg-white px-5 py-2 text-center text-sm font-semibold text-ink hover:bg-border/40"
 					>Bewerk profiel</a>
+					<a
+						href="/bookmarks"
+						class="inline-block rounded-full border border-border bg-white px-5 py-2 text-center text-sm font-semibold text-ink hover:bg-border/40"
+					>🔖 Bookmarks</a>
 				{:else}
 					<FollowButton username={data.profile.username} initial={data.profile.follow_state} />
 				{/if}

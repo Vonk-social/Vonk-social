@@ -88,5 +88,5 @@
 <Toast />
 
 {#if activeStory}
-	<StoryViewer group={activeStory} onClose={() => (activeStory = null)} />
+	<StoryViewer group={activeStory} user={data.user} onClose={() => (activeStory = null)} />
 {/if}
