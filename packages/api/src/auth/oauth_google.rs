@@ -49,12 +49,24 @@ pub fn random_state() -> String {
     URL_SAFE_NO_PAD.encode(buf)
 }
 
-/// Build the Google authorize URL.
-pub fn build_authorize_url(cfg: &AppConfig, state: &str, pkce_challenge: &str) -> String {
+/// Build the Google authorize URL for a specific origin.
+///
+/// `origin` is the `scheme://host` the user is currently on (resolved from
+/// the request's Host header via nginx `proxy_set_header Host $host`).
+/// Google enforces that the same redirect_uri is passed to both the
+/// authorize URL and the token exchange — so the caller must pass the
+/// same `origin` to `exchange_code`.
+pub fn build_authorize_url(
+    cfg: &AppConfig,
+    origin: Option<&str>,
+    state: &str,
+    pkce_challenge: &str,
+) -> String {
+    let redirect = cfg.google_redirect_uri(origin);
     let params = [
         ("response_type", "code"),
         ("client_id", cfg.google_client_id.as_str()),
-        ("redirect_uri", &cfg.google_redirect_uri()),
+        ("redirect_uri", redirect.as_str()),
         ("scope", "openid email profile"),
         ("state", state),
         ("code_challenge", pkce_challenge),
@@ -105,17 +117,22 @@ pub struct GoogleUserInfo {
 }
 
 /// Exchange the authorization code for tokens.
+///
+/// `origin` must match whatever was passed to `build_authorize_url` —
+/// Google compares the redirect_uri in both calls byte-for-byte.
 pub async fn exchange_code(
     http: &reqwest::Client,
     cfg: &AppConfig,
+    origin: Option<&str>,
     code: &str,
     pkce_verifier: &str,
 ) -> anyhow::Result<GoogleTokenResponse> {
+    let redirect = cfg.google_redirect_uri(origin);
     let form = [
         ("code", code),
         ("client_id", cfg.google_client_id.as_str()),
         ("client_secret", cfg.google_client_secret.as_str()),
-        ("redirect_uri", &cfg.google_redirect_uri()),
+        ("redirect_uri", redirect.as_str()),
         ("grant_type", "authorization_code"),
         ("code_verifier", pkce_verifier),
     ];

@@ -36,7 +36,10 @@ pub fn router() -> Router<AppState> {
 
 // ── /login/google ────────────────────────────────────────────
 
-async fn login_google(State(state): State<AppState>) -> ApiResult<Redirect> {
+async fn login_google(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> ApiResult<Redirect> {
     if !state.config.google_configured() {
         return Err(ApiError::bad_request(
             "google_not_configured",
@@ -47,13 +50,22 @@ async fn login_google(State(state): State<AppState>) -> ApiResult<Redirect> {
     let csrf = oauth_google::random_state();
     let pkce = oauth_google::PkcePair::new_sha256();
 
-    // Store the verifier under the state key so we can recover it in the
-    // callback. 10 minute TTL is plenty for a user clicking through consent.
+    // Store the verifier + the origin the user was on when they started the
+    // flow, so the callback — which may not see the same Host — can rebuild
+    // the same redirect_uri. Google enforces byte-for-byte equality of
+    // redirect_uri between authorize and token endpoints.
+    let origin = origin_from_headers(&headers);
     let mut conn = state.redis.clone();
     let key = redis_key(&csrf);
-    let _: () = conn.set_ex(&key, &pkce.verifier, 600).await?;
+    let payload = format!(
+        "{}\n{}",
+        pkce.verifier,
+        origin.as_deref().unwrap_or("")
+    );
+    let _: () = conn.set_ex(&key, &payload, 600).await?;
 
-    let url = oauth_google::build_authorize_url(&state.config, &csrf, &pkce.challenge);
+    let url =
+        oauth_google::build_authorize_url(&state.config, origin.as_deref(), &csrf, &pkce.challenge);
     Ok(Redirect::to(&url))
 }
 
@@ -86,21 +98,34 @@ async fn callback_google(
         .state
         .ok_or_else(|| ApiError::bad_request("missing_state", "Missing ?state"))?;
 
-    // 1. Recover the PKCE verifier (and validate state in one step — if
-    //    state is unknown / already consumed, Redis returns None).
+    // 1. Recover the PKCE verifier + originating host (and validate state in
+    //    one step — if state is unknown / already consumed, Redis returns
+    //    None).
     let mut conn = state.redis.clone();
-    let verifier: Option<String> = redis::cmd("GETDEL")
+    let stored: Option<String> = redis::cmd("GETDEL")
         .arg(redis_key(&csrf))
         .query_async(&mut conn)
         .await?;
-    let verifier = verifier.ok_or_else(|| {
+    let stored = stored.ok_or_else(|| {
         ApiError::bad_request("invalid_state", "OAuth state expired or unknown")
     })?;
+    let (verifier, stored_origin) = match stored.split_once('\n') {
+        Some((v, o)) if !o.is_empty() => (v.to_string(), Some(o.to_string())),
+        Some((v, _)) => (v.to_string(), None),
+        None => (stored, None),
+    };
 
-    // 2. Exchange the code.
-    let tokens = oauth_google::exchange_code(&state.http, &state.config, &code, &verifier)
-        .await
-        .map_err(ApiError::Upstream)?;
+    // 2. Exchange the code — use the origin we captured at login so the
+    //    redirect_uri matches exactly.
+    let tokens = oauth_google::exchange_code(
+        &state.http,
+        &state.config,
+        stored_origin.as_deref(),
+        &code,
+        &verifier,
+    )
+    .await
+    .map_err(ApiError::Upstream)?;
 
     // 3. Fetch userinfo.
     let info = oauth_google::fetch_userinfo(&state.http, &tokens.access_token)
@@ -143,10 +168,17 @@ async fn callback_google(
         .add(cookies::access(access, &state.config))
         .add(cookies::refresh(session_id.to_string(), &state.config));
 
+    // Send the user back to whatever host they started on — falls back to
+    // the configured web_url if the login began before this host-capture
+    // mechanism existed.
+    let dest_base = stored_origin
+        .as_deref()
+        .map(|s| s.trim_end_matches('/').to_string())
+        .unwrap_or_else(|| state.config.web_url.trim_end_matches('/').to_string());
     let dest = if user.needs_onboarding() {
-        format!("{}/onboarding/username", state.config.web_url.trim_end_matches('/'))
+        format!("{dest_base}/onboarding/username")
     } else {
-        format!("{}/home", state.config.web_url.trim_end_matches('/'))
+        format!("{dest_base}/home")
     };
 
     Ok((jar, Redirect::to(&dest)).into_response())
@@ -372,4 +404,22 @@ fn prefixed(prefix: &str, cols: &str) -> String {
         .map(|c| format!("{prefix}.{}", c.trim()))
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+/// Build `scheme://host` from forwarded headers. nginx sets
+/// `X-Forwarded-Proto` + forwards `Host`, so we can reconstruct the exact
+/// origin the user is on. Returns `None` if we can't — callers fall back to
+/// the configured api_url in that case.
+fn origin_from_headers(headers: &HeaderMap) -> Option<String> {
+    let host = headers
+        .get("x-forwarded-host")
+        .or_else(|| headers.get(axum::http::header::HOST))
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string())?;
+    let scheme = headers
+        .get("x-forwarded-proto")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("https")
+        .to_string();
+    Some(format!("{scheme}://{host}"))
 }
