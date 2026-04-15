@@ -38,6 +38,10 @@ services:
       timeout: 3s
 
   # ── Object Storage ────────────────────────────────────────
+  # NOTE: MinIO's default 9000/9001 collide with common local dev setups
+  # (e.g. php-fpm listens on 9000 on many macOS dev machines). We remap to
+  # 9100/9101 on the host; inside the compose network the service still
+  # listens on 9000/9001.
   vonk-media:
     image: minio/minio:latest
     restart: unless-stopped
@@ -48,8 +52,8 @@ services:
     volumes:
       - vonk-media-dev:/data
     ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
+      - "127.0.0.1:9100:9000"
+      - "127.0.0.1:9101:9001"
 
   # ── MinIO bucket init ─────────────────────────────────────
   vonk-media-init:

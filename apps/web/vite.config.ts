@@ -19,7 +19,7 @@ export default defineConfig({
 				xfwd: true
 			},
 			'/media': {
-				target: 'http://localhost:9000',
+				target: 'http://localhost:9100',
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/media/, '/vonk-media')
 			}
