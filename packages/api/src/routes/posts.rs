@@ -30,7 +30,12 @@ pub fn router() -> Router<AppState> {
         )
         .route("/api/posts/{uuid}/replies", get(get_replies))
         .route("/api/posts/{uuid}/like", post(like_post).delete(unlike_post))
+        .route("/api/posts/{uuid}/bookmark", post(bookmark_post).delete(unbookmark_post))
+        .route("/api/posts/{uuid}/repost", post(repost_post).delete(unrepost_post))
+        .route("/api/posts/{uuid}/pin", post(pin_post).delete(unpin_post))
+        .route("/api/posts/{uuid}/viewers", get(story_viewers))
         .route("/api/posts/{uuid}/viewed", post(mark_story_viewed))
+        .route("/api/bookmarks", get(list_bookmarks))
         .route("/api/tags/search", get(search_tags))
 }
 
@@ -531,11 +536,16 @@ async fn load_public_post(state: &AppState, viewer_id: i64, post_id: i64) -> Api
         r#"
         SELECT
             p.uuid, p.user_id AS author_id, p.content, p.post_type, p.visibility,
-            p.reply_count, p.like_count, p.is_edited, p.expires_at, p.created_at,
+            p.reply_count, p.like_count, p.is_edited, p.expires_at, p.pinned_at, p.created_at,
             u.uuid AS author_uuid, u.username AS author_username,
             u.display_name AS author_display_name, u.avatar_url AS author_avatar_url,
             (SELECT uuid FROM posts r WHERE r.id = p.reply_to_id) AS reply_to_uuid,
-            EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = $1) AS liked_by_me
+            (SELECT uuid FROM posts ro WHERE ro.id = p.repost_of_id) AS repost_of_uuid,
+            EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = $1) AS liked_by_me,
+            EXISTS(SELECT 1 FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = $1) AS bookmarked_by_me,
+            EXISTS(SELECT 1 FROM posts rp WHERE rp.repost_of_id = p.id AND rp.user_id = $1 AND rp.deleted_at IS NULL) AS reposted_by_me,
+            (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id)::int AS bookmark_count,
+            (SELECT COUNT(*) FROM posts rp WHERE rp.repost_of_id = p.id AND rp.deleted_at IS NULL)::int AS repost_count
         FROM posts p JOIN users u ON u.id = p.user_id
         WHERE p.id = $2
         "#,
@@ -553,11 +563,11 @@ async fn load_public_post(state: &AppState, viewer_id: i64, post_id: i64) -> Api
         .unwrap_or_default();
 
     let author_id: i64 = row.try_get("author_id").unwrap_or(0);
-    let like_count = if author_id == viewer_id {
-        row.try_get::<i32, _>("like_count").ok()
-    } else {
-        None
-    };
+    let is_author = author_id == viewer_id;
+    let like_count = if is_author { row.try_get::<i32, _>("like_count").ok() } else { None };
+    let bookmark_count =
+        if is_author { row.try_get::<i32, _>("bookmark_count").ok() } else { None };
+    let repost_count = if is_author { row.try_get::<i32, _>("repost_count").ok() } else { None };
 
     Ok(PublicPost {
         uuid: row.try_get("uuid").unwrap_or_else(|_| Uuid::nil()),
@@ -572,14 +582,426 @@ async fn load_public_post(state: &AppState, viewer_id: i64, post_id: i64) -> Api
         post_type: row.try_get::<String, _>("post_type").unwrap_or_default(),
         visibility: row.try_get::<String, _>("visibility").unwrap_or_default(),
         reply_to_uuid: row.try_get("reply_to_uuid").ok(),
+        repost_of_uuid: row.try_get("repost_of_uuid").ok(),
         reply_count: row.try_get("reply_count").unwrap_or(0),
         is_edited: row
             .try_get::<Option<bool>, _>("is_edited")
             .unwrap_or(Some(false))
             .unwrap_or(false),
         expires_at: row.try_get("expires_at").ok(),
+        pinned_at: row.try_get("pinned_at").ok(),
         created_at: row.try_get("created_at").unwrap_or_else(|_| Utc::now()),
         liked_by_me: row.try_get::<bool, _>("liked_by_me").unwrap_or(false),
+        bookmarked_by_me: row.try_get::<bool, _>("bookmarked_by_me").unwrap_or(false),
+        reposted_by_me: row.try_get::<bool, _>("reposted_by_me").unwrap_or(false),
         like_count,
+        bookmark_count,
+        repost_count,
     })
+}
+
+// ── bookmarks ────────────────────────────────────────────────
+
+async fn bookmark_post(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(post_uuid): Path<Uuid>,
+) -> ApiResult<StatusCode> {
+    let row: Option<(i64,)> = sqlx::query_as(
+        "SELECT id FROM posts WHERE uuid = $1 AND deleted_at IS NULL",
+    )
+    .bind(post_uuid)
+    .fetch_optional(&state.db)
+    .await?;
+    let post_id = row.ok_or(ApiError::NotFound)?.0;
+    if !is_visible_to(&state, user.id, post_id).await? {
+        return Err(ApiError::NotFound);
+    }
+    sqlx::query(
+        "INSERT INTO bookmarks (user_id, post_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+    )
+    .bind(user.id)
+    .bind(post_id)
+    .execute(&state.db)
+    .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn unbookmark_post(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(post_uuid): Path<Uuid>,
+) -> ApiResult<StatusCode> {
+    let row: Option<(i64,)> = sqlx::query_as(
+        "SELECT id FROM posts WHERE uuid = $1 AND deleted_at IS NULL",
+    )
+    .bind(post_uuid)
+    .fetch_optional(&state.db)
+    .await?;
+    let post_id = row.ok_or(ApiError::NotFound)?.0;
+    sqlx::query("DELETE FROM bookmarks WHERE user_id = $1 AND post_id = $2")
+        .bind(user.id)
+        .bind(post_id)
+        .execute(&state.db)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn list_bookmarks(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Query(q): Query<ListQuery>,
+) -> ApiResult<Json<PageResponse<PublicPost>>> {
+    let cursor = q.cursor.as_deref().and_then(Cursor::decode);
+    let limit = query::clamp_limit(q.limit);
+
+    // Reuse the big SELECT by filtering posts via a WHERE on the bookmarks
+    // table — separate query path because the visibility still has to apply
+    // (a bookmark of a post that later went private-only should vanish).
+    let cursor_sql = if cursor.is_some() {
+        "AND (p.created_at, p.id) < ($2, $3)"
+    } else {
+        ""
+    };
+
+    let sql = format!(
+        r#"
+        SELECT
+            p.id, p.uuid, p.user_id AS author_id, p.content, p.post_type, p.visibility,
+            p.reply_count, p.like_count, p.is_edited, p.expires_at, p.pinned_at, p.created_at,
+            u.uuid AS author_uuid, u.username AS author_username,
+            u.display_name AS author_display_name, u.avatar_url AS author_avatar_url,
+            (SELECT uuid FROM posts r WHERE r.id = p.reply_to_id) AS reply_to_uuid,
+            (SELECT uuid FROM posts ro WHERE ro.id = p.repost_of_id) AS repost_of_uuid,
+            EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = $1) AS liked_by_me,
+            true AS bookmarked_by_me,
+            EXISTS(SELECT 1 FROM posts rp WHERE rp.repost_of_id = p.id AND rp.user_id = $1 AND rp.deleted_at IS NULL) AS reposted_by_me,
+            (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id)::int AS bookmark_count,
+            (SELECT COUNT(*) FROM posts rp WHERE rp.repost_of_id = p.id AND rp.deleted_at IS NULL)::int AS repost_count
+        FROM bookmarks bm
+        JOIN posts p ON p.id = bm.post_id
+        JOIN users u ON u.id = p.user_id
+        WHERE bm.user_id = $1
+          AND p.deleted_at IS NULL
+          AND (
+                p.visibility = 'public'
+             OR (p.visibility = 'followers' AND (
+                    p.user_id = $1 OR EXISTS (
+                        SELECT 1 FROM follows f
+                         WHERE f.follower_id = $1 AND f.following_id = p.user_id
+                           AND f.status = 'active'
+                    )
+                ))
+             OR (p.visibility = 'mentioned' AND ($1 = ANY(p.mentioned_user_ids) OR p.user_id = $1))
+              )
+          {cursor_sql}
+        ORDER BY bm.created_at DESC, p.id DESC
+        LIMIT {lim}
+        "#,
+        lim = limit + 1,
+    );
+
+    let rows = if let Some(c) = cursor {
+        sqlx::query(&sql)
+            .bind(user.id)
+            .bind(c.ts)
+            .bind(c.id)
+            .fetch_all(&state.db)
+            .await?
+    } else {
+        sqlx::query(&sql).bind(user.id).fetch_all(&state.db).await?
+    };
+
+    // We don't use the feed::query::build_page helper because this query has a
+    // different ordering (bm.created_at, not p.created_at). Inline the mapping.
+    let has_more = rows.len() as i64 > limit;
+    let shown = if has_more { &rows[..limit as usize] } else { &rows[..] };
+    let ids: Vec<i64> = shown.iter().map(|r| r.try_get::<i64, _>("id").unwrap_or(0)).collect();
+    let mut media_map = crate::feed::query::fetch_media_for_posts(&state.db, &ids).await?;
+
+    let mut items: Vec<PublicPost> = Vec::with_capacity(shown.len());
+    let mut last_row_opt: Option<(chrono::DateTime<chrono::Utc>, i64)> = None;
+    for r in shown {
+        let id: i64 = r.try_get("id").unwrap_or(0);
+        let author_id: i64 = r.try_get("author_id").unwrap_or(0);
+        let created_at: chrono::DateTime<chrono::Utc> =
+            r.try_get("created_at").unwrap_or_else(|_| Utc::now());
+        last_row_opt = Some((created_at, id));
+        let is_author = author_id == user.id;
+        let like_count = if is_author { r.try_get::<i32, _>("like_count").ok() } else { None };
+        let bookmark_count =
+            if is_author { r.try_get::<i32, _>("bookmark_count").ok() } else { None };
+        let repost_count =
+            if is_author { r.try_get::<i32, _>("repost_count").ok() } else { None };
+        items.push(PublicPost {
+            uuid: r.try_get("uuid").unwrap_or_else(|_| Uuid::nil()),
+            author: PostAuthor {
+                uuid: r.try_get("author_uuid").unwrap_or_else(|_| Uuid::nil()),
+                username: r.try_get("author_username").unwrap_or_default(),
+                display_name: r.try_get("author_display_name").unwrap_or_default(),
+                avatar_url: r.try_get("author_avatar_url").ok(),
+            },
+            content: r.try_get("content").ok(),
+            media: media_map.remove(&id).unwrap_or_default(),
+            post_type: r.try_get::<String, _>("post_type").unwrap_or_default(),
+            visibility: r.try_get::<String, _>("visibility").unwrap_or_default(),
+            reply_to_uuid: r.try_get("reply_to_uuid").ok(),
+            repost_of_uuid: r.try_get("repost_of_uuid").ok(),
+            reply_count: r.try_get("reply_count").unwrap_or(0),
+            is_edited: r
+                .try_get::<Option<bool>, _>("is_edited")
+                .unwrap_or(Some(false))
+                .unwrap_or(false),
+            expires_at: r.try_get("expires_at").ok(),
+            pinned_at: r.try_get("pinned_at").ok(),
+            created_at,
+            liked_by_me: r.try_get::<bool, _>("liked_by_me").unwrap_or(false),
+            bookmarked_by_me: r.try_get::<bool, _>("bookmarked_by_me").unwrap_or(true),
+            reposted_by_me: r.try_get::<bool, _>("reposted_by_me").unwrap_or(false),
+            like_count,
+            bookmark_count,
+            repost_count,
+        });
+    }
+
+    let next_cursor = if has_more {
+        last_row_opt.map(|(ts, id)| Cursor { ts, id }.encode())
+    } else {
+        None
+    };
+
+    Ok(Json(PageResponse {
+        data: items,
+        cursor: next_cursor.clone(),
+        has_more: next_cursor.is_some(),
+    }))
+}
+
+// ── reposts ──────────────────────────────────────────────────
+
+#[derive(Debug, Deserialize, Validate)]
+struct RepostBody {
+    #[validate(length(max = 5000))]
+    comment: Option<String>,
+    #[serde(default = "default_visibility_repost")]
+    visibility: String,
+}
+
+fn default_visibility_repost() -> String {
+    "public".to_string()
+}
+
+async fn repost_post(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(post_uuid): Path<Uuid>,
+    body: Option<Json<RepostBody>>,
+) -> ApiResult<(StatusCode, Json<DataEnvelope<PublicPost>>)> {
+    let body = body.map(|Json(b)| b).unwrap_or(RepostBody {
+        comment: None,
+        visibility: "public".into(),
+    });
+    body.validate()?;
+    if !matches!(body.visibility.as_str(), "public" | "followers" | "mentioned") {
+        return Err(ApiError::bad_request(
+            "invalid_visibility",
+            "visibility must be 'public', 'followers' or 'mentioned'",
+        ));
+    }
+
+    let row: Option<(i64, i64)> = sqlx::query_as(
+        "SELECT id, user_id FROM posts WHERE uuid = $1 AND deleted_at IS NULL",
+    )
+    .bind(post_uuid)
+    .fetch_optional(&state.db)
+    .await?;
+    let (orig_id, orig_author) = row.ok_or(ApiError::NotFound)?;
+    if orig_author == user.id && body.comment.is_none() {
+        return Err(ApiError::bad_request(
+            "cannot_repost_own",
+            "You can't repost your own post without a comment. Use pin instead.",
+        ));
+    }
+    if !is_visible_to(&state, user.id, orig_id).await? {
+        return Err(ApiError::NotFound);
+    }
+
+    // Prevent duplicate (no-comment) reposts of the same post.
+    if body.comment.is_none() {
+        let existing: Option<(i64,)> = sqlx::query_as(
+            "SELECT id FROM posts \
+              WHERE user_id = $1 AND repost_of_id = $2 AND deleted_at IS NULL \
+                AND content IS NULL",
+        )
+        .bind(user.id)
+        .bind(orig_id)
+        .fetch_optional(&state.db)
+        .await?;
+        if existing.is_some() {
+            return Err(ApiError::conflict(
+                "already_reposted",
+                "You've already reposted this",
+            ));
+        }
+    }
+
+    let new_uuid = Uuid::new_v4();
+    let post_id: i64 = sqlx::query_scalar(
+        "INSERT INTO posts (uuid, user_id, content, post_type, visibility, repost_of_id) \
+         VALUES ($1, $2, $3, 'post', $4, $5) \
+         RETURNING id",
+    )
+    .bind(new_uuid)
+    .bind(user.id)
+    .bind(body.comment.as_deref())
+    .bind(&body.visibility)
+    .bind(orig_id)
+    .fetch_one(&state.db)
+    .await?;
+
+    let post = load_public_post(&state, user.id, post_id).await?;
+    Ok((StatusCode::CREATED, Json(DataEnvelope { data: post })))
+}
+
+async fn unrepost_post(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(post_uuid): Path<Uuid>,
+) -> ApiResult<StatusCode> {
+    let row: Option<(i64,)> = sqlx::query_as(
+        "SELECT id FROM posts WHERE uuid = $1 AND deleted_at IS NULL",
+    )
+    .bind(post_uuid)
+    .fetch_optional(&state.db)
+    .await?;
+    let orig_id = row.ok_or(ApiError::NotFound)?.0;
+    sqlx::query(
+        "UPDATE posts SET deleted_at = now() \
+          WHERE user_id = $1 AND repost_of_id = $2 AND deleted_at IS NULL \
+            AND content IS NULL",
+    )
+    .bind(user.id)
+    .bind(orig_id)
+    .execute(&state.db)
+    .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+// ── pin / unpin ──────────────────────────────────────────────
+
+const MAX_PINNED_PER_USER: i64 = 3;
+
+async fn pin_post(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(post_uuid): Path<Uuid>,
+) -> ApiResult<StatusCode> {
+    let row: Option<(i64, i64)> = sqlx::query_as(
+        "SELECT id, user_id FROM posts WHERE uuid = $1 AND deleted_at IS NULL",
+    )
+    .bind(post_uuid)
+    .fetch_optional(&state.db)
+    .await?;
+    let (post_id, author_id) = row.ok_or(ApiError::NotFound)?;
+    if author_id != user.id {
+        return Err(ApiError::Forbidden);
+    }
+
+    let currently_pinned: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM posts \
+          WHERE user_id = $1 AND pinned_at IS NOT NULL AND deleted_at IS NULL \
+            AND id != $2",
+    )
+    .bind(user.id)
+    .bind(post_id)
+    .fetch_one(&state.db)
+    .await?;
+    if currently_pinned.0 >= MAX_PINNED_PER_USER {
+        return Err(ApiError::conflict(
+            "too_many_pinned",
+            "You can pin at most 3 posts. Unpin one first.",
+        ));
+    }
+
+    sqlx::query("UPDATE posts SET pinned_at = now() WHERE id = $1")
+        .bind(post_id)
+        .execute(&state.db)
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+async fn unpin_post(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(post_uuid): Path<Uuid>,
+) -> ApiResult<StatusCode> {
+    sqlx::query(
+        "UPDATE posts SET pinned_at = NULL \
+          WHERE uuid = $1 AND user_id = $2 AND deleted_at IS NULL",
+    )
+    .bind(post_uuid)
+    .bind(user.id)
+    .execute(&state.db)
+    .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+// ── story viewers (author only) ─────────────────────────────
+
+#[derive(Serialize)]
+struct StoryViewerRow {
+    uuid: Uuid,
+    username: String,
+    display_name: String,
+    avatar_url: Option<String>,
+    viewed_at: chrono::DateTime<chrono::Utc>,
+}
+
+async fn story_viewers(
+    State(state): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path(post_uuid): Path<Uuid>,
+) -> ApiResult<Json<DataEnvelope<Vec<StoryViewerRow>>>> {
+    let row: Option<(i64, i64, String)> = sqlx::query_as(
+        "SELECT id, user_id, post_type FROM posts \
+          WHERE uuid = $1 AND deleted_at IS NULL",
+    )
+    .bind(post_uuid)
+    .fetch_optional(&state.db)
+    .await?;
+    let (story_id, author_id, post_type) = row.ok_or(ApiError::NotFound)?;
+    if author_id != user.id {
+        // 404 rather than 403 so existence isn't leaked.
+        return Err(ApiError::NotFound);
+    }
+    if post_type != "story" {
+        return Ok(Json(DataEnvelope { data: vec![] }));
+    }
+
+    let rows = sqlx::query(
+        r#"
+        SELECT u.uuid, u.username, u.display_name, u.avatar_url, sv.viewed_at
+          FROM story_views sv
+          JOIN users u ON u.id = sv.user_id
+         WHERE sv.story_id = $1
+         ORDER BY sv.viewed_at DESC
+         LIMIT 500
+        "#,
+    )
+    .bind(story_id)
+    .fetch_all(&state.db)
+    .await?;
+
+    Ok(Json(DataEnvelope {
+        data: rows
+            .into_iter()
+            .map(|r| StoryViewerRow {
+                uuid: r.try_get("uuid").unwrap_or_else(|_| Uuid::nil()),
+                username: r.try_get("username").unwrap_or_default(),
+                display_name: r.try_get("display_name").unwrap_or_default(),
+                avatar_url: r.try_get("avatar_url").ok(),
+                viewed_at: r.try_get("viewed_at").unwrap_or_else(|_| Utc::now()),
+            })
+            .collect(),
+    }))
 }

@@ -35,21 +35,38 @@ pub struct Page<T> {
 /// audience-specific predicate placeholder filled in by each caller.
 /// `{cursor}` is replaced with either an empty string or the cursor clause
 /// using the given placeholder numbers.
-fn base_sql(author_predicate: &str, cursor_clause: &str, hide_stories: bool) -> String {
+fn base_sql(
+    author_predicate: &str,
+    cursor_clause: &str,
+    hide_stories: bool,
+    pinned_first: bool,
+) -> String {
     let story_filter = if hide_stories {
         "AND p.post_type != 'story'"
     } else {
         ""
     };
+    let order = if pinned_first {
+        // Pinned posts first, within pinned by pinned_at desc, then chronological.
+        "ORDER BY (p.pinned_at IS NULL) ASC, p.pinned_at DESC NULLS LAST, \
+         p.created_at DESC, p.id DESC"
+    } else {
+        "ORDER BY p.created_at DESC, p.id DESC"
+    };
     format!(
         r#"
         SELECT
             p.id, p.uuid, p.user_id AS author_id, p.content, p.post_type, p.visibility,
-            p.reply_count, p.like_count, p.is_edited, p.expires_at, p.created_at,
+            p.reply_count, p.like_count, p.is_edited, p.expires_at, p.pinned_at, p.created_at,
             u.uuid AS author_uuid, u.username AS author_username,
             u.display_name AS author_display_name, u.avatar_url AS author_avatar_url,
             (SELECT uuid FROM posts r WHERE r.id = p.reply_to_id) AS reply_to_uuid,
-            EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = $1) AS liked_by_me
+            (SELECT uuid FROM posts ro WHERE ro.id = p.repost_of_id) AS repost_of_uuid,
+            EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = $1) AS liked_by_me,
+            EXISTS(SELECT 1 FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = $1) AS bookmarked_by_me,
+            EXISTS(SELECT 1 FROM posts rp WHERE rp.repost_of_id = p.id AND rp.user_id = $1 AND rp.deleted_at IS NULL) AS reposted_by_me,
+            (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id)::int AS bookmark_count,
+            (SELECT COUNT(*) FROM posts rp WHERE rp.repost_of_id = p.id AND rp.deleted_at IS NULL)::int AS repost_count
         FROM posts p
         JOIN users u ON u.id = p.user_id
         WHERE p.deleted_at IS NULL
@@ -68,7 +85,7 @@ fn base_sql(author_predicate: &str, cursor_clause: &str, hide_stories: bool) -> 
              OR (p.visibility = 'mentioned' AND ($1 = ANY(p.mentioned_user_ids) OR p.user_id = $1))
               )
           {cursor_clause}
-        ORDER BY p.created_at DESC, p.id DESC
+        {order}
     "#
     )
 }
@@ -88,7 +105,7 @@ pub async fn fetch_feed(
         Some(c) => {
             let sql = format!(
                 "{body} LIMIT {lim}",
-                body = base_sql(author, "AND (p.created_at, p.id) < ($2, $3)", true),
+                body = base_sql(author, "AND (p.created_at, p.id) < ($2, $3)", true, false),
                 lim = limit + 1,
             );
             let rows = sqlx::query(&sql)
@@ -100,7 +117,11 @@ pub async fn fetch_feed(
             build_page(db, rows, requester_id, limit).await
         }
         None => {
-            let sql = format!("{body} LIMIT {lim}", body = base_sql(author, "", true), lim = limit + 1);
+            let sql = format!(
+                "{body} LIMIT {lim}",
+                body = base_sql(author, "", true, false),
+                lim = limit + 1
+            );
             let rows = sqlx::query(&sql).bind(requester_id).fetch_all(db).await?;
             build_page(db, rows, requester_id, limit).await
         }
@@ -120,7 +141,7 @@ pub async fn fetch_user_posts(
         Some(c) => {
             let sql = format!(
                 "{body} LIMIT {lim}",
-                body = base_sql(author, "AND (p.created_at, p.id) < ($3, $4)", true),
+                body = base_sql(author, "AND (p.created_at, p.id) < ($3, $4)", true, true),
                 lim = limit + 1,
             );
             let rows = sqlx::query(&sql)
@@ -135,7 +156,7 @@ pub async fn fetch_user_posts(
         None => {
             let sql = format!(
                 "{body} LIMIT {lim}",
-                body = base_sql(author, "", true),
+                body = base_sql(author, "", true, true),
                 lim = limit + 1,
             );
             let rows = sqlx::query(&sql)
@@ -163,7 +184,7 @@ pub async fn fetch_replies(
         Some(c) => {
             let sql = format!(
                 "{body} LIMIT {lim}",
-                body = base_sql(author, "AND (p.created_at, p.id) < ($3, $4)", false),
+                body = base_sql(author, "AND (p.created_at, p.id) < ($3, $4)", false, false),
                 lim = limit + 1,
             );
             let rows = sqlx::query(&sql)
@@ -178,7 +199,7 @@ pub async fn fetch_replies(
         None => {
             let sql = format!(
                 "{body} LIMIT {lim}",
-                body = base_sql(author, "", false),
+                body = base_sql(author, "", false, false),
                 lim = limit + 1,
             );
             let rows = sqlx::query(&sql)
@@ -217,13 +238,14 @@ async fn build_page(
         let created_at: DateTime<Utc> = r.try_get("created_at").unwrap_or_else(|_| Utc::now());
         last_row_opt = Some((created_at, id));
 
-        // Author-only: like_count surfaced in the JSON when the requester
-        // is the post's author; None otherwise, which serde skips entirely.
-        let like_count = if author_id == requester_id {
-            r.try_get::<i32, _>("like_count").ok()
-        } else {
-            None
-        };
+        // Author-only counters surfaced only when requester == author;
+        // None otherwise → serde skips entirely.
+        let is_author = author_id == requester_id;
+        let like_count = if is_author { r.try_get::<i32, _>("like_count").ok() } else { None };
+        let bookmark_count =
+            if is_author { r.try_get::<i32, _>("bookmark_count").ok() } else { None };
+        let repost_count =
+            if is_author { r.try_get::<i32, _>("repost_count").ok() } else { None };
 
         items.push(PublicPost {
             uuid: r.try_get("uuid").unwrap_or_else(|_| Uuid::nil()),
@@ -238,15 +260,21 @@ async fn build_page(
             post_type: r.try_get::<String, _>("post_type").unwrap_or_default(),
             visibility: r.try_get::<String, _>("visibility").unwrap_or_default(),
             reply_to_uuid: r.try_get("reply_to_uuid").ok(),
+            repost_of_uuid: r.try_get("repost_of_uuid").ok(),
             reply_count: r.try_get("reply_count").unwrap_or(0),
             is_edited: r
                 .try_get::<Option<bool>, _>("is_edited")
                 .unwrap_or(Some(false))
                 .unwrap_or(false),
             expires_at: r.try_get("expires_at").ok(),
+            pinned_at: r.try_get("pinned_at").ok(),
             created_at,
             liked_by_me: r.try_get::<bool, _>("liked_by_me").unwrap_or(false),
+            bookmarked_by_me: r.try_get::<bool, _>("bookmarked_by_me").unwrap_or(false),
+            reposted_by_me: r.try_get::<bool, _>("reposted_by_me").unwrap_or(false),
             like_count,
+            bookmark_count,
+            repost_count,
         });
     }
 
