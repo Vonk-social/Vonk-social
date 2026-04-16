@@ -19,6 +19,8 @@ pub struct Outgoing {
     pub html_body: Option<String>,
 }
 
+use std::collections::HashMap;
+
 #[derive(Serialize)]
 struct PostalMessage {
     to: Vec<String>,
@@ -28,6 +30,8 @@ struct PostalMessage {
     plain_body: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     html_body: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    headers: Option<HashMap<String, String>>,
 }
 
 #[derive(Deserialize)]
@@ -44,6 +48,18 @@ pub async fn send(cfg: &AppConfig, out: Outgoing) -> Result<()> {
 
     let api_url = format!("https://{}/api/v1/send/message", cfg.smtp_host);
 
+    let mut headers = HashMap::new();
+    // Gmail 2024 bulk-sender requirement: List-Unsubscribe.
+    // mailto: unsubscribe — Postal will set the envelope correctly.
+    headers.insert(
+        "List-Unsubscribe".to_string(),
+        format!("<mailto:{}>", cfg.smtp_from),
+    );
+    headers.insert(
+        "List-Unsubscribe-Post".to_string(),
+        "List-Unsubscribe=One-Click".to_string(),
+    );
+
     let msg = PostalMessage {
         to: vec![out.to],
         from: format!("{} <{}>", cfg.smtp_from_name, cfg.smtp_from),
@@ -51,6 +67,7 @@ pub async fn send(cfg: &AppConfig, out: Outgoing) -> Result<()> {
         subject: out.subject,
         plain_body: out.text_body,
         html_body: out.html_body,
+        headers: Some(headers),
     };
 
     let client = reqwest::Client::builder()
