@@ -24,6 +24,7 @@ use crate::auth::AuthUser;
 use crate::error::{ApiError, ApiResult};
 use crate::models::post::PostAuthor;
 use crate::state::AppState;
+use crate::ws::{WsEvent, WsMessageData};
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -451,6 +452,30 @@ async fn send_message(
     .execute(&state.db)
     .await?;
 
+    let now = Utc::now();
+
+    // Broadcast to all WebSocket subscribers in this conversation.
+    state
+        .ws_hub
+        .broadcast(
+            conv_uuid,
+            WsEvent::Message {
+                data: WsMessageData {
+                    uuid: msg_uuid,
+                    sender: PostAuthor {
+                        uuid: me.uuid,
+                        username: me.username.clone(),
+                        display_name: me.display_name.clone(),
+                        avatar_url: me.avatar_url.clone(),
+                    },
+                    content: content.clone(),
+                    created_at: now,
+                    is_mine: false,
+                },
+            },
+        )
+        .await;
+
     Ok((
         StatusCode::CREATED,
         Json(DataEnvelope {
@@ -463,7 +488,7 @@ async fn send_message(
                     avatar_url: me.avatar_url.clone(),
                 },
                 content,
-                created_at: Utc::now(),
+                created_at: now,
                 is_mine: true,
             },
         }),

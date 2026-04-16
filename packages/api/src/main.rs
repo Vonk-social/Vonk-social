@@ -30,6 +30,7 @@ mod push;
 mod routes;
 mod s3;
 mod state;
+mod ws;
 
 use crate::config::AppConfig;
 use crate::state::AppState;
@@ -152,6 +153,8 @@ async fn main() -> anyhow::Result<()> {
         (None, None)
     };
 
+    let ws_hub = ws::WsHub::new();
+
     let state = AppState {
         db,
         redis,
@@ -160,6 +163,7 @@ async fn main() -> anyhow::Result<()> {
         config: cfg.clone(),
         self_node_id,
         cluster_ring,
+        ws_hub,
     };
 
     // CORS: reflect the request Origin only if it's in the allowed list.
@@ -193,6 +197,7 @@ async fn main() -> anyhow::Result<()> {
         .merge(routes::invites::router())
         .merge(routes::push::router())
         .merge(routes::dm::router())
+        .merge(ws::router())
         .merge(routes::cluster::router())
         .merge(routes::admin::nodes::router())
         .layer(cors)

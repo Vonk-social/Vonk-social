@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { onMount, tick } from 'svelte';
+	import { onMount, onDestroy, tick } from 'svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import { fetchMessages, sendMessage } from '$lib/api/dm';
 	import type { DmMessage } from '$lib/api/dm';
+	import { WsManager } from '$lib/ws';
+	import type { WsMessageData } from '$lib/ws';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -16,6 +18,14 @@
 	let sending = $state(false);
 	let chatContainer: HTMLDivElement | undefined = $state();
 
+	// WebSocket state.
+	let typingUser = $state<string | null>(null);
+	let typingTimeout: ReturnType<typeof setTimeout> | null = null;
+	let wsManager: WsManager | null = null;
+
+	// Our own username — used to filter out our own typing/message events.
+	const myUsername = data.user?.username ?? '';
+
 	async function scrollToBottom() {
 		await tick();
 		if (chatContainer) {
@@ -25,6 +35,60 @@
 
 	onMount(() => {
 		scrollToBottom();
+
+		// Connect WebSocket.
+		wsManager = new WsManager({
+			onMessage: (msg: WsMessageData) => {
+				// Skip our own messages — we already appended them optimistically.
+				if (msg.sender.username === myUsername) return;
+
+				const dmMsg: DmMessage = {
+					uuid: msg.uuid,
+					sender: msg.sender,
+					content: msg.content,
+					created_at: msg.created_at,
+					is_mine: false
+				};
+
+				// Deduplicate: check if already present (from HTTP response).
+				if (!messages.some((m) => m.uuid === dmMsg.uuid)) {
+					messages = [...messages, dmMsg];
+					scrollToBottom();
+				}
+
+				// Clear typing indicator when a message arrives.
+				if (typingUser === msg.sender.username) {
+					typingUser = null;
+				}
+			},
+			onTyping: (username: string) => {
+				if (username === myUsername) return;
+				typingUser = username;
+				// Auto-clear after 5 seconds.
+				if (typingTimeout) clearTimeout(typingTimeout);
+				typingTimeout = setTimeout(() => {
+					typingUser = null;
+				}, 5000);
+			},
+			onStopTyping: (username: string) => {
+				if (typingUser === username) {
+					typingUser = null;
+				}
+			}
+		});
+
+		wsManager.connect();
+		wsManager.joinConversation(data.conversationUuid);
+	});
+
+	onDestroy(() => {
+		if (wsManager) {
+			wsManager.disconnect();
+			wsManager = null;
+		}
+		if (typingTimeout) {
+			clearTimeout(typingTimeout);
+		}
 	});
 
 	async function loadOlder() {
@@ -53,6 +117,10 @@
 		const text = messageInput.trim();
 		if (!text || sending) return;
 		sending = true;
+
+		// Stop typing indicator.
+		if (wsManager) wsManager.stopTyping(data.conversationUuid);
+
 		try {
 			const msg = await sendMessage(data.conversationUuid, text);
 			messages = [...messages, msg];
@@ -69,6 +137,12 @@
 		if (e.key === 'Enter' && !e.shiftKey) {
 			e.preventDefault();
 			handleSend();
+		}
+	}
+
+	function handleInput() {
+		if (wsManager && messageInput.trim()) {
+			wsManager.sendTyping(data.conversationUuid);
 		}
 	}
 
@@ -164,6 +238,17 @@
 				<p>Stuur het eerste bericht!</p>
 			</div>
 		{/if}
+
+		{#if typingUser}
+			<div class="mb-2 flex items-center gap-2 pl-1">
+				<div class="flex gap-0.5">
+					<span class="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:0ms]"></span>
+					<span class="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:150ms]"></span>
+					<span class="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-muted [animation-delay:300ms]"></span>
+				</div>
+				<span class="text-xs text-muted">{typingUser} is aan het typen...</span>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Input bar — sits above the BottomNav -->
@@ -175,6 +260,7 @@
 				rows="1"
 				bind:value={messageInput}
 				onkeydown={handleKeydown}
+				oninput={handleInput}
 			></textarea>
 			<button
 				type="button"

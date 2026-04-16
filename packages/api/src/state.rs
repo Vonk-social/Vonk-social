@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use crate::cluster::ring::HashRing;
 use crate::config::AppConfig;
+use crate::ws::WsHub;
 
 /// Cloneable handle holding all long-lived resources.
 ///
@@ -27,4 +28,8 @@ pub struct AppState {
     pub self_node_id: Option<Uuid>,
     /// The current hash ring. Refreshed every 30s by ring_refresh task.
     pub cluster_ring: Option<Arc<RwLock<HashRing>>>,
+
+    // ── WebSocket (DM real-time) ──────────────────────────────
+    /// Central hub for live DM chat: message broadcast, typing, online status.
+    pub ws_hub: Arc<WsHub>,
 }
