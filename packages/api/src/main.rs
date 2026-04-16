@@ -192,6 +192,7 @@ async fn main() -> anyhow::Result<()> {
         .merge(routes::snaps::router())
         .merge(routes::invites::router())
         .merge(routes::push::router())
+        .merge(routes::dm::router())
         .merge(routes::cluster::router())
         .merge(routes::admin::nodes::router())
         .layer(cors)

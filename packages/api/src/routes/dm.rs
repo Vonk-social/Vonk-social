@@ -12,7 +12,7 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::{get, post},
+    routing::get,
     Json, Router,
 };
 use chrono::{DateTime, Utc};
@@ -259,6 +259,7 @@ async fn list_messages(
 
     // Decode cursor (created_at,id).
     let cursor = q.cursor.as_deref().and_then(|s| {
+        use base64::Engine as _;
         let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
             .decode(s)
             .ok()?;

@@ -2,6 +2,7 @@
 pub mod admin;
 pub mod auth;
 pub mod cluster;
+pub mod dm;
 pub mod feed;
 pub mod follows;
 pub mod invites;
