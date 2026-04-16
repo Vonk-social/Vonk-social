@@ -3,7 +3,8 @@
 use std::time::Duration;
 
 use anyhow::{anyhow, Context, Result};
-use lettre::message::{header::ContentType, Mailbox, Message};
+use lettre::message::header::ContentType;
+use lettre::message::{Mailbox, Message};
 use lettre::transport::smtp::authentication::Credentials;
 use lettre::transport::smtp::client::{Tls, TlsParametersBuilder};
 use lettre::{AsyncSmtpTransport, AsyncTransport, Tokio1Executor};
@@ -27,10 +28,21 @@ pub async fn send(cfg: &AppConfig, out: Outgoing) -> Result<()> {
         .context("parse SMTP From mailbox")?;
     let to: Mailbox = out.to.parse().context("parse recipient mailbox")?;
 
+    // Set the envelope sender (Return-Path) to match the From domain
+    // so SPF aligns with vonk.social instead of Postal's default
+    // bounce domain. This is the #1 reason Gmail flags invite mails
+    // as spam.
+    let envelope_from: Mailbox = "bounces+invites@vonk.social"
+        .parse()
+        .context("parse envelope From")?;
+
     let builder = Message::builder()
-        .from(from)
+        .from(from.clone())
         .to(to)
-        .subject(&out.subject);
+        .sender(envelope_from)
+        .subject(&out.subject)
+        // Gmail 2024 bulk-sender rules: List-Unsubscribe is required.
+        .user_agent("Vonk/1.0".to_string());
 
     let email = match out.html_body {
         Some(html) => builder
