@@ -113,11 +113,9 @@
 
 {#if !deleted}
 	<article
-		class:ml-8={depth > 0}
-		class:border-l-2={depth > 0}
-		class:border-border={depth > 0}
-		class:pl-4={depth > 0}
-		class="vonk-card mb-4"
+		class={depth > 0
+			? 'ml-6 border-l-2 border-border pl-3 pb-3 pt-2 mb-1'
+			: 'vonk-card mb-4'}
 		aria-label="Post van {post.author.display_name}, {when}"
 	>
 		<!-- Pinned badge: only on profile views where pinned_at is set -->
