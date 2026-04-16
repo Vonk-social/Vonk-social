@@ -85,6 +85,35 @@ pub struct UpdateMeRequest {
     /// When true, mark onboarding as complete (idempotent).
     #[serde(default)]
     finish_onboarding: Option<bool>,
+
+    // External social handles — empty string clears the value.
+    #[serde(default)]
+    #[validate(length(max = 60))]
+    handle_instagram: Option<String>,
+    #[serde(default)]
+    #[validate(length(max = 60))]
+    handle_twitter: Option<String>,
+    #[serde(default)]
+    #[validate(length(max = 60))]
+    handle_snapchat: Option<String>,
+    #[serde(default)]
+    #[validate(length(max = 60))]
+    handle_telegram: Option<String>,
+    #[serde(default)]
+    #[validate(length(max = 60))]
+    handle_bluesky: Option<String>,
+    #[serde(default)]
+    #[validate(length(max = 60))]
+    handle_mastodon: Option<String>,
+    #[serde(default)]
+    #[validate(length(max = 255))]
+    handle_website: Option<String>,
+
+    /// X25519 public key (base64url, no padding). Required to receive
+    /// E2EE v1 snaps; null-safe.
+    #[serde(default)]
+    #[validate(length(max = 128))]
+    public_key: Option<String>,
 }
 
 async fn update_me(
@@ -134,6 +163,44 @@ async fn update_me(
     // construction while staying readable.
     let finish = req.finish_onboarding.unwrap_or(false) || new_username.is_some();
 
+    fn norm_handle(s: Option<&str>) -> Option<Option<String>> {
+        s.map(|raw| {
+            let trimmed = raw.trim().trim_start_matches('@');
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        })
+    }
+    let h_ig = norm_handle(req.handle_instagram.as_deref());
+    let h_tw = norm_handle(req.handle_twitter.as_deref());
+    let h_sn = norm_handle(req.handle_snapchat.as_deref());
+    let h_tg = norm_handle(req.handle_telegram.as_deref());
+    let h_bs = norm_handle(req.handle_bluesky.as_deref());
+    let h_ma = norm_handle(req.handle_mastodon.as_deref());
+    let h_web = req.handle_website.as_deref().map(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(t.to_string())
+        }
+    });
+    let public_key = req.public_key.as_deref().map(|s| {
+        let t = s.trim();
+        if t.is_empty() {
+            None
+        } else {
+            Some(t.to_string())
+        }
+    });
+
+    // For optional-clearable columns we use a pair of binds:
+    //   $N::bool  → "did the caller send this field at all"
+    //   $M::text  → the new value (possibly NULL for "clear")
+    // When the first is false we leave the column untouched; otherwise
+    // we set it to $M (which may be NULL to clear).
     let updated = sqlx::query_as::<_, User>(&format!(
         r#"
         UPDATE users SET
@@ -148,6 +215,14 @@ async fn update_me(
                 WHEN $9::bool AND onboarding_completed_at IS NULL THEN now()
                 ELSE onboarding_completed_at
             END,
+            handle_instagram = CASE WHEN $10::bool THEN $11::text ELSE handle_instagram END,
+            handle_twitter   = CASE WHEN $12::bool THEN $13::text ELSE handle_twitter   END,
+            handle_snapchat  = CASE WHEN $14::bool THEN $15::text ELSE handle_snapchat  END,
+            handle_telegram  = CASE WHEN $16::bool THEN $17::text ELSE handle_telegram  END,
+            handle_bluesky   = CASE WHEN $18::bool THEN $19::text ELSE handle_bluesky   END,
+            handle_mastodon  = CASE WHEN $20::bool THEN $21::text ELSE handle_mastodon  END,
+            handle_website   = CASE WHEN $22::bool THEN $23::text ELSE handle_website   END,
+            public_key       = CASE WHEN $24::bool THEN $25::text ELSE public_key       END,
             updated_at       = now()
         WHERE id = $1
         RETURNING {cols}
@@ -163,6 +238,22 @@ async fn update_me(
     .bind(req.locale.as_deref())
     .bind(req.is_private)
     .bind(finish)
+    .bind(h_ig.is_some())
+    .bind(h_ig.flatten())
+    .bind(h_tw.is_some())
+    .bind(h_tw.flatten())
+    .bind(h_sn.is_some())
+    .bind(h_sn.flatten())
+    .bind(h_tg.is_some())
+    .bind(h_tg.flatten())
+    .bind(h_bs.is_some())
+    .bind(h_bs.flatten())
+    .bind(h_ma.is_some())
+    .bind(h_ma.flatten())
+    .bind(h_web.is_some())
+    .bind(h_web.flatten())
+    .bind(public_key.is_some())
+    .bind(public_key.flatten())
     .fetch_one(&state.db)
     .await
     .map_err(map_unique_violation)?;

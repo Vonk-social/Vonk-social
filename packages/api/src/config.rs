@@ -60,6 +60,20 @@ pub struct AppConfig {
 
     // Cookies
     pub cookie_domain: Option<String>,
+
+    // Email (Postal SMTP)
+    pub smtp_host: String,
+    pub smtp_port: u16,
+    pub smtp_user: String,
+    pub smtp_pass: String,
+    pub smtp_from: String,
+    pub smtp_from_name: String,
+
+    // Web Push (VAPID)
+    pub vapid_public_key: String,
+    pub vapid_private_key: String,
+    #[allow(dead_code)] // Used once web push dispatch lands in Phase 3.1.
+    pub vapid_subject: String,
 }
 
 impl AppConfig {
@@ -122,6 +136,15 @@ impl AppConfig {
                 .unwrap_or(true),
             ip_hash_salt,
             cookie_domain,
+            smtp_host: env_or("SMTP_HOST", ""),
+            smtp_port: env_parsed("SMTP_PORT", 587u16)?,
+            smtp_user: env_or("SMTP_USER", ""),
+            smtp_pass: env_or("SMTP_PASS", ""),
+            smtp_from: env_or("SMTP_FROM", "noreply@vonk.social"),
+            smtp_from_name: env_or("SMTP_FROM_NAME", "Vonk"),
+            vapid_public_key: env_or("VAPID_PUBLIC_KEY", ""),
+            vapid_private_key: env_or("VAPID_PRIVATE_KEY", ""),
+            vapid_subject: env_or("VAPID_SUBJECT", "mailto:noreply@vonk.social"),
         })
     }
 
@@ -146,6 +169,16 @@ impl AppConfig {
     /// True when GitHub OAuth credentials are configured.
     pub fn github_configured(&self) -> bool {
         !self.github_client_id.is_empty() && !self.github_client_secret.is_empty()
+    }
+
+    /// True when SMTP credentials are configured.
+    pub fn smtp_configured(&self) -> bool {
+        !self.smtp_host.is_empty() && !self.smtp_user.is_empty() && !self.smtp_pass.is_empty()
+    }
+
+    /// True when VAPID keys for Web Push are configured.
+    pub fn vapid_configured(&self) -> bool {
+        !self.vapid_public_key.is_empty() && !self.vapid_private_key.is_empty()
     }
 
     /// True when Apple Sign-in is fully configured. Token exchange also
