@@ -20,7 +20,7 @@ use redis::AsyncCommands;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::auth::{cookies, jwt, oauth_github, oauth_google};
+use crate::auth::{cookies, jwt, oauth_apple, oauth_github, oauth_google};
 use crate::error::{ApiError, ApiResult};
 use crate::models::User;
 use crate::state::AppState;
@@ -32,6 +32,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/auth/callback/google", get(callback_google))
         .route("/api/auth/login/github", get(login_github))
         .route("/api/auth/callback/github", get(callback_github))
+        .route("/api/auth/login/apple", get(login_apple))
         .route("/api/auth/refresh", post(refresh))
         .route("/api/auth/logout", post(logout))
 }
@@ -495,6 +496,36 @@ async fn upsert_github_user(
     tx.commit().await?;
 
     Ok((new_user, true))
+}
+
+// ── /login/apple ─────────────────────────────────────────────
+//
+// Apple Sign-in is wired as far as the authorize redirect. The token
+// exchange requires an ES256-signed JWT minted from a .p8 private key
+// which we don't ship yet — `apple_configured()` gates the endpoint so
+// we never hit the unfinished path in production.
+
+async fn login_apple(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> ApiResult<Redirect> {
+    if !state.config.apple_configured() {
+        return Err(ApiError::bad_request(
+            "apple_not_configured",
+            "Apple Sign-in is not configured on the server",
+        ));
+    }
+
+    let csrf = oauth_apple::random_state();
+    let origin = origin_from_headers(&headers);
+
+    let mut conn = state.redis.clone();
+    let key = format!("oauth:apple:state:{csrf}");
+    let payload = origin.as_deref().unwrap_or("").to_string();
+    let _: () = conn.set_ex(&key, &payload, 600).await?;
+
+    let url = oauth_apple::build_authorize_url(&state.config, origin.as_deref(), &csrf);
+    Ok(Redirect::to(&url))
 }
 
 // ── /refresh ─────────────────────────────────────────────────
