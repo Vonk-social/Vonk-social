@@ -5,5 +5,7 @@
 //! via internal HTTP APIs authenticated with per-node API keys.
 
 pub mod heartbeat;
+pub mod proxy;
 pub mod replication;
 pub mod ring;
+pub mod ring_refresh;

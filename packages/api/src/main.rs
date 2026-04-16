@@ -43,6 +43,8 @@ struct HealthResponse {
     apple_oauth_configured: bool,
     smtp_configured: bool,
     vapid_configured: bool,
+    cluster_enabled: bool,
+    cluster_node_id: Option<String>,
 }
 
 async fn health(
@@ -56,6 +58,8 @@ async fn health(
         apple_oauth_configured: state.config.apple_configured(),
         smtp_configured: state.config.smtp_configured(),
         vapid_configured: state.config.vapid_configured(),
+        cluster_enabled: state.config.cluster_enabled,
+        cluster_node_id: state.self_node_id.map(|id| id.to_string()),
     })
 }
 
@@ -118,12 +122,44 @@ async fn main() -> anyhow::Result<()> {
         .timeout(std::time::Duration::from_secs(10))
         .build()?;
 
+    // ── Cluster setup (Phase 3.5) ─────────────────────────────
+    let (self_node_id, cluster_ring) = if cfg.cluster_enabled {
+        use std::sync::Arc;
+        use tokio::sync::RwLock;
+
+        let node_id_str = cfg.cluster_node_id.as_deref().unwrap_or("");
+        let node_id: Option<uuid::Uuid> = node_id_str.parse().ok();
+
+        if let Some(nid) = node_id {
+            tracing::info!(node_id = %nid, "cluster mode enabled");
+
+            // Build initial ring from active nodes.
+            let ring = cluster::ring::HashRing::new(Vec::new(), 2);
+            let ring = Arc::new(RwLock::new(ring));
+
+            // Spawn ring refresh (rebuilds every 30s).
+            cluster::ring_refresh::spawn(db.clone(), ring.clone(), 2);
+
+            // Spawn replication worker.
+            cluster::replication::spawn_worker(db.clone(), nid);
+
+            (Some(nid), Some(ring))
+        } else {
+            tracing::warn!("CLUSTER_ENABLED=true but CLUSTER_NODE_ID is missing or invalid");
+            (None, None)
+        }
+    } else {
+        (None, None)
+    };
+
     let state = AppState {
         db,
         redis,
         s3: s3_client,
         http,
         config: cfg.clone(),
+        self_node_id,
+        cluster_ring,
     };
 
     // CORS: reflect the request Origin only if it's in the allowed list.
