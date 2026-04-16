@@ -228,13 +228,29 @@
 		class="mx-auto flex max-w-4xl flex-col items-center justify-between gap-3 text-xs text-muted md:flex-row"
 	>
 		<span>{t('landing.footer.license', locale)}</span>
-		<a
-			href="https://github.com/Vonk-social/Vonk-social"
-			rel="noopener"
-			class="underline decoration-border underline-offset-4 hover:text-ink"
-		>
-			{t('landing.footer.source', locale)}
-		</a>
+		<div class="flex items-center gap-3">
+			<a
+				href="/privacy"
+				class="underline decoration-border underline-offset-4 hover:text-ink"
+			>
+				{t('footer.privacy', locale)}
+			</a>
+			<span class="text-border">|</span>
+			<a
+				href="/terms"
+				class="underline decoration-border underline-offset-4 hover:text-ink"
+			>
+				{t('footer.terms', locale)}
+			</a>
+			<span class="text-border">|</span>
+			<a
+				href="https://github.com/Vonk-social/Vonk-social"
+				rel="noopener"
+				class="underline decoration-border underline-offset-4 hover:text-ink"
+			>
+				{t('landing.footer.source', locale)}
+			</a>
+		</div>
 		<span>{t('landing.footer.europe', locale)}</span>
 	</div>
 </footer>
