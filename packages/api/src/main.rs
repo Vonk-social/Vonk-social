@@ -144,6 +144,9 @@ async fn main() -> anyhow::Result<()> {
             // Spawn replication worker.
             cluster::replication::spawn_worker(db.clone(), nid);
 
+            // Spawn rebalancer (checks every 60s for placement drift).
+            cluster::rebalance::spawn(db.clone(), ring.clone(), nid);
+
             (Some(nid), Some(ring))
         } else {
             tracing::warn!("CLUSTER_ENABLED=true but CLUSTER_NODE_ID is missing or invalid");

@@ -6,6 +6,7 @@
 
 pub mod heartbeat;
 pub mod proxy;
+pub mod rebalance;
 pub mod replication;
 pub mod ring;
 pub mod ring_refresh;
