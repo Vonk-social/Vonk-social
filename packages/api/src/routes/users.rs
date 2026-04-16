@@ -413,14 +413,38 @@ async fn upload_avatar(
 
     // Decode & re-encode via the shared pipeline. Re-encoding drops
     // EXIF/XMP/IPTC metadata entirely.
-    let variants = {
+    let (variants, phash) = {
         let bytes = bytes.clone();
-        tokio::task::spawn_blocking(move || {
-            pipeline::process_image(&bytes, pipeline::AVATAR_VARIANTS)
+        tokio::task::spawn_blocking(move || -> Result<_, ApiError> {
+            let variants = pipeline::process_image(&bytes, pipeline::AVATAR_VARIANTS)?;
+            let phash = compute_avatar_phash(&bytes)?;
+            Ok((variants, phash))
         })
         .await
         .map_err(|e| ApiError::Internal(anyhow::anyhow!("avatar worker panicked: {e}")))??
     };
+
+    // Check uniqueness: is this photo already used by another user?
+    let duplicate: Option<(String,)> = sqlx::query_as(
+        "SELECT username FROM users \
+         WHERE avatar_phash IS NOT NULL \
+           AND id != $1 \
+           AND deleted_at IS NULL \
+           AND bit_count(avatar_phash # $2::bigint) <= 5",
+    )
+    .bind(user.id)
+    .bind(phash)
+    .fetch_optional(&state.db)
+    .await?;
+
+    if let Some((dup_username,)) = duplicate {
+        return Err(ApiError::conflict(
+            "avatar_duplicate",
+            format!(
+                "Deze foto lijkt al gebruikt te worden door @{dup_username}. Kies een andere foto."
+            ),
+        ));
+    }
 
     // Upload all three variants.
     for v in &variants {
@@ -443,8 +467,9 @@ async fn upload_avatar(
     let ts = chrono::Utc::now().timestamp();
     let avatar_url = format!("/media/avatars/{}/medium.webp?v={ts}", user.uuid);
 
-    sqlx::query("UPDATE users SET avatar_url = $1, updated_at = now() WHERE id = $2")
+    sqlx::query("UPDATE users SET avatar_url = $1, avatar_phash = $2, updated_at = now() WHERE id = $3")
         .bind(&avatar_url)
+        .bind(phash)
         .bind(user.id)
         .execute(&state.db)
         .await?;
@@ -618,4 +643,35 @@ async fn suggest_users(
             })
             .collect(),
     }))
+}
+
+/// Compute a perceptual hash (pHash) for avatar duplicate detection.
+///
+/// Algorithm: resize to 8×8 grayscale, compute mean luminance, set bit=1
+/// for each pixel above mean. Produces a 64-bit hash that's robust against
+/// resize, compression, and minor color shifts. Two images are "the same"
+/// if the Hamming distance between their hashes is ≤5 bits.
+fn compute_avatar_phash(bytes: &[u8]) -> Result<i64, ApiError> {
+    use image::imageops::FilterType;
+
+    let img = image::load_from_memory(bytes)
+        .map_err(|e| ApiError::bad_request("bad_image", format!("Cannot decode image: {e}")))?;
+
+    // Resize to 8x8 grayscale.
+    let small = img.resize_exact(8, 8, FilterType::Lanczos3).to_luma8();
+
+    // Compute mean luminance.
+    let pixels: Vec<u8> = small.as_raw().to_vec();
+    let mean = pixels.iter().map(|&p| p as u64).sum::<u64>() / pixels.len().max(1) as u64;
+
+    // Build 64-bit hash: bit=1 if pixel > mean.
+    let mut hash: u64 = 0;
+    for (i, &p) in pixels.iter().enumerate().take(64) {
+        if (p as u64) > mean {
+            hash |= 1 << i;
+        }
+    }
+
+    // Store as i64 (Postgres BIGINT). Bit pattern preserved.
+    Ok(hash as i64)
 }
