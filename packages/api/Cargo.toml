@@ -60,9 +60,14 @@ time = "0.3"
 rand = "0.8"
 base64 = "0.22"
 hex = "0.4"
-sha2 = "0.10"
+sha2 = { version = "0.10", features = ["oid"] }
 regex = "1"
 once_cell = "1"
+
+# ActivityPub / federation
+rsa = { version = "0.9", features = ["pem"] }
+pkcs8 = { version = "0.10", features = ["pem"] }
+hmac = "0.12"
 
 [dev-dependencies]
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "cookies"] }

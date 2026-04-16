@@ -39,6 +39,8 @@ pub struct User {
     pub handle_bluesky: Option<String>,
     pub handle_mastodon: Option<String>,
     pub handle_website: Option<String>,
+    pub ap_pubkey: Option<String>,
+    pub ap_privkey: Option<String>,
 }
 
 impl User {
@@ -55,7 +57,8 @@ impl User {
                                        locale, is_private, is_suspended, created_at, updated_at, \
                                        onboarding_completed_at, public_key, handle_instagram, \
                                        handle_twitter, handle_snapchat, handle_telegram, \
-                                       handle_bluesky, handle_mastodon, handle_website";
+                                       handle_bluesky, handle_mastodon, handle_website, \
+                                       ap_pubkey, ap_privkey";
 }
 
 /// Private profile (what the user sees for themselves — includes email).

@@ -16,6 +16,7 @@ use serde::Serialize;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
+mod activitypub;
 mod auth;
 mod cluster;
 mod config;
@@ -203,6 +204,10 @@ async fn main() -> anyhow::Result<()> {
         .merge(ws::router())
         .merge(routes::cluster::router())
         .merge(routes::admin::nodes::router())
+        // ActivityPub federation (outside /api/ prefix — standard paths)
+        .merge(routes::webfinger::router())
+        .merge(routes::nodeinfo::router())
+        .merge(routes::activitypub::router())
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);

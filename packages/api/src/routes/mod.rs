@@ -12,3 +12,8 @@ pub mod posts;
 pub mod push;
 pub mod snaps;
 pub mod users;
+
+// ActivityPub federation
+pub mod activitypub;
+pub mod nodeinfo;
+pub mod webfinger;
