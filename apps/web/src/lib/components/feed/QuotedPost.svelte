@@ -29,7 +29,7 @@
 
 <a
 	href={original ? `/post/${original.uuid}` : '#'}
-	class="mt-3 block rounded-xl border border-border bg-surface/50 p-3 transition-colors hover:bg-border/30"
+	class="mt-2 block rounded-lg border border-border/60 px-3 py-2 text-sm transition-colors hover:bg-border/20"
 	aria-label={original ? `Origineel van ${original.author.display_name}` : 'Origineel'}
 >
 	{#if loading}
@@ -37,13 +37,13 @@
 	{:else if gone || !original}
 		<p class="text-sm text-muted italic">Origineel niet beschikbaar.</p>
 	{:else}
-		<header class="flex items-center gap-2">
-			<Avatar url={original.author.avatar_url} name={original.author.display_name} size={24} />
-			<span class="font-semibold text-ink">{original.author.display_name}</span>
+		<header class="flex items-center gap-1.5">
+			<Avatar url={original.author.avatar_url} name={original.author.display_name} size={18} />
+			<span class="font-semibold text-ink text-xs">{original.author.display_name}</span>
 			<span class="text-xs text-muted">@{original.author.username}</span>
 		</header>
 		{#if original.content}
-			<p class="mt-2 line-clamp-3 text-sm text-ink" style="word-break: break-word;">
+			<p class="mt-1 line-clamp-2 text-sm text-muted" style="word-break: break-word;">
 				{original.content}
 			</p>
 		{/if}
