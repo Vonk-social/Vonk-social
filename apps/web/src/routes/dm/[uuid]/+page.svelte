@@ -166,8 +166,8 @@
 		{/if}
 	</div>
 
-	<!-- Input bar -->
-	<div class="border-t border-border bg-white px-4 py-3">
+	<!-- Input bar — sits above the BottomNav -->
+	<div class="border-t border-border bg-white px-4 py-3" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); margin-bottom: 4rem;">
 		<div class="flex items-end gap-2">
 			<textarea
 				class="max-h-32 min-h-[40px] flex-1 resize-none rounded-2xl border border-border bg-surface px-4 py-2 text-sm text-ink placeholder:text-muted focus:border-terracotta focus:outline-none"
