@@ -59,7 +59,17 @@ pub struct AppConfig {
     pub ip_hash_salt: String,
 
     // Cookies
+    /// When set, pins all cookies to this domain (e.g. ".vonk.social").
+    /// When empty the cookie is "host-only" — the browser scopes it to
+    /// whichever host the response came from, which is what we want when
+    /// the same backend serves multiple domains (vonk.social + vonk.openview.be).
     pub cookie_domain: Option<String>,
+
+    /// Comma-separated list of origins allowed to make credentialed requests.
+    /// Default: WEB_URL only. Set to e.g.
+    ///   "https://vonk.social,https://vonk.openview.be"
+    /// to allow multiple front-end hosts.
+    pub cors_origins: Vec<String>,
 
     // Email (Postal SMTP)
     pub smtp_host: String,
@@ -136,6 +146,18 @@ impl AppConfig {
                 .unwrap_or(true),
             ip_hash_salt,
             cookie_domain,
+            cors_origins: {
+                let raw = std::env::var("CORS_ORIGINS").unwrap_or_default();
+                if raw.trim().is_empty() {
+                    // Default: just the configured WEB_URL.
+                    vec![env_or("WEB_URL", "http://localhost:5173")]
+                } else {
+                    raw.split(',')
+                        .map(|s| s.trim().trim_end_matches('/').to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect()
+                }
+            },
             smtp_host: env_or("SMTP_HOST", ""),
             smtp_port: env_parsed("SMTP_PORT", 587u16)?,
             smtp_user: env_or("SMTP_USER", ""),
