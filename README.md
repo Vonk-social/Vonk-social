@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://vonk.openview.be">Staging (alpha)</a> ·
+  <a href="https://vonk.social">vonk.social</a> ·
   <a href="#roadmap">Roadmap</a> ·
   <a href="#contributing">Contribute</a> ·
   <a href="https://github.com/sponsors/vonk-social">Donate</a>
@@ -45,6 +45,9 @@ across multiple nodes (RAID-style). If one goes down, the rest keeps
 running. DMs are end-to-end encrypted: even node operators can't read
 them. [Want to host a node?](https://vonk.social/host)
 
+**Federated.** Vonk speaks ActivityPub — search `@dimitry@vonk.social` from
+any Mastodon instance and follow along.
+
 The full list of architectural guardrails is in [CLAUDE.md §Non-Negotiable Rules](CLAUDE.md).
 
 ## How is Vonk funded?
@@ -60,22 +63,12 @@ Everything left over is **donated annually to charities** focused on
 world peace and health. The community votes on which organisations
 receive funding.
 
-## Live staging
+## Live
 
-Alpha-testable at any of:
-
-- **https://vonk.social** (primary domain)
-- **https://www.vonk.social**
-- **https://vonk.openview.be** (original staging host)
-
-All three serve the same backend. Google sign-in works on each; OAuth
-redirect_uri is built dynamically from the `Host` header so a login
-started on `vonk.social` returns to `vonk.social`, not to whichever
-domain happens to be pinned in the server env.
-
-Seeded with a handful of placeholder accounts so the feed and discover
-pages have content. Expect breaking changes; the database may be wiped
-between phases.
+Alpha-testable at **https://vonk.social** — sign in with Google, GitHub,
+or Apple. Seeded with a handful of placeholder accounts so the feed and
+discover pages have content. Expect breaking changes; the database may
+be wiped between phases.
 
 ## Feature matrix
 
@@ -86,13 +79,13 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 | Feature | Status |
 |---|---|
 | Google OAuth 2.0 / OIDC sign-in | ✅ |
+| GitHub OAuth 2.0 + PKCE sign-in | ✅ |
+| Apple Sign-in (ES256 client_secret + JWKS verification) | ✅ |
 | JWT access (15 min) + opaque session refresh (30 d) in httpOnly cookies | ✅ |
-| User profiles (display name, bio, location, avatar, locale) | ✅ |
-| Onboarding wizard (username → avatar → friends) | ✅ |
+| Refresh-token rotation + reuse detection (chain revocation) | ✅ |
+| User profiles (display name, bio, location, avatar, locale, social handles) | ✅ |
+| Onboarding wizard (username → avatar → invite friends) | ✅ |
 | Avatar upload (EXIF-strip → 3 WebP variants → MinIO) | ✅ |
-| Apple sign-in | 📋 |
-| GitHub sign-in | 📋 |
-| itsme / EU eID sign-in | ⏸ |
 
 ### Phase 2 — Posts, feed, social graph 🧪
 
@@ -104,7 +97,7 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 | @mention autocomplete in composer | ✅ |
 | #hashtag autocomplete (90-day corpus scan) | ✅ |
 | Likes (private count — only author sees it, per privacy rule #7) | ✅ |
-| Inline replies (no page navigation), one-shot composer | ✅ |
+| Inline replies (auto-expand last 3, thread-line style) | ✅ |
 | Public profiles with follow button + followers/following lists | ✅ |
 | Follow system (public + pending approval for private accounts) | ✅ |
 | Stories (24h, tray view, viewer with keyboard / tap-to-skip) | ✅ |
@@ -113,46 +106,54 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 | Bookmarks (private, server-side + `/bookmarks` page) | ✅ |
 | Reposts + quote-reposts (embedded original post card) | ✅ |
 | Pinned posts on profile (max 3, sorted pinned-first) | ✅ |
-| Author counters inline (likes/replies/bookmarks/reposts — no impressions) | ✅ |
-| Story viewer list (author-only 👁 button) | ✅ |
+| Direct messages (1:1 text chat with conversation list) | ✅ |
+| Real-time WebSocket chat (live messages + typing indicator) | ✅ |
 | Share button (web Share API + clipboard fallback) | ✅ |
-| Post menu (pin/unpin + delete on your own posts) | ✅ |
 
-### Phase 3 — E2EE, mobile, friend import 🧪
+### Phase 3 — E2EE, mobile, friend import ✅
 
 | Feature | Status |
 |---|---|
 | End-to-end-encrypted snaps (AES-256-GCM + X25519 ECDH v1 envelope) | ✅ |
+| E2EE wired into snap compose flow (auto-encrypts when recipient has pubkey) | ✅ |
 | Long-term X25519 keypair in IndexedDB + `public_key` on profile | ✅ |
-| Refresh-token rotation + reuse detection (chain revocation) | ✅ |
 | 48h `sessions.ip_hash` sweep cron (tokio background task) | ✅ |
-| GitHub OAuth 2.0 + PKCE sign-in (gated on env) | ✅ |
-| Apple Sign-in scaffold (authorize-redirect only; callback needs ES256 JWT) | 🟡 |
 | Postal SMTP integration + email invites (`/api/invites`) | ✅ |
 | Handle-based friend discovery (`/api/invites/match-handles`, 6 platforms + website) | ✅ |
-| `/invite` page — e-mail invites + handle-match UI | ✅ |
-| `PATCH /api/users/me` accepts 7 handle fields + `public_key` | ✅ |
-| Web Push subscriptions (`/api/push/*`) + service worker + VAPID | ✅ |
-| `/settings` push toggle + per-device subscribe | ✅ |
-| Login page conditionally renders Google/GitHub/Apple from `/api/health` | ✅ |
+| `/invite` page — e-mail invites + handle-match UI + autocomplete | ✅ |
+| Web Push notifications (DM, mention, follow, reply) + service worker + VAPID | ✅ |
+| `/settings` push toggle, handle editor, privacy toggle | ✅ |
+| Invite banner on /home (prominent until 30+ connections) | ✅ |
+| Login page + landing conditionally render Google/GitHub/Apple from `/api/health` | ✅ |
 | Capacitor 6 iOS + Android scaffold (`apps/mobile/`) | ✅ |
-| Native camera + contact-hash import via Capacitor plugins | 📋 |
-| Push dispatch from notification sources (DM/mention/follow) | 📋 |
-| Apple Sign-in token exchange (ES256 client_secret, id_token verification) | 📋 |
-| Snap frontend actually calling `encryptFor()` on compose | 📋 |
+| Privacy policy + Terms of Service in 15 languages | ✅ |
+
+### Phase 3.5 — Distributed cluster (RAID5-model) 🧪
+
+| Feature | Status |
+|---|---|
+| Cluster node registry + admin API (`/api/admin/nodes`) | ✅ |
+| Volunteer join request flow (`/host` + `/api/cluster/join-request`) | ✅ |
+| Consistent hash ring (rendezvous hashing for user→node placement) | ✅ |
+| Replication engine (queue + background worker + `/api/cluster/replicate`) | ✅ |
+| Request routing (cluster-aware state, ring refresh, proxy helper) | ✅ |
+| Node rebalancing (automatic placement sync on join/leave/crash) | ✅ |
+| ActivityPub federation (WebFinger + Actor + Outbox + Inbox + NodeInfo) | ✅ |
+| HTTP Signatures (RSA sign outgoing, verify incoming) | ✅ |
+| Apple id_token JWKS signature verification | ✅ |
+| Docker one-click deploy for volunteers | 📋 |
+| Node health dashboard (admin UI) | 📋 |
 
 ### Phase 4+ — Content & growth ⏸
 
 | Feature | Status |
 |---|---|
 | Public financial dashboard (`/api/open/*`) | 📋 |
-| Waitlist endpoint | 📋 |
 | Short video posts (ffmpeg transcode) | ⏸ |
 | Snap Map (opt-in location) | ⏸ |
 | Streaks, Memories, Bitmoji-style avatars | ⏸ |
 | Groups | ⏸ |
 | Events | ⏸ |
-| ActivityPub federation | ⏸ |
 | Admin moderation dashboard (`apps/admin/`) | ⏸ |
 
 ### Cross-cutting ✅
@@ -160,12 +161,12 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 | Feature | Status |
 |---|---|
 | Dark + light mode (warm-dark palette, OS-aware) | ✅ |
-| Instagram-style bottom nav (Home / Zoek / 📷 / Snaps / Profiel) | ✅ |
-| 15 European languages on the landing (NL + EN native, others translated-for-review) | ✅ |
+| Instagram-style bottom nav (Home / Zoek / 📷 / Berichten / Profiel) | ✅ |
+| 15 European languages (NL + EN native, 13 others translated) | ✅ |
 | Accept-Language auto-detect with cookie override | ✅ |
 | Privacy-preserving IP hashing (rotating day salt) | ✅ |
 | EXIF stripping on every upload | ✅ |
-| Rate limiting (nginx-based currently; Valkey tower layer planned) | 🧪 |
+| Multi-domain support (dynamic CORS + host-aware OAuth) | ✅ |
 
 ## Privacy by design
 
@@ -173,10 +174,10 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 - **IP retention** — stored as `sha256(ip || salt || day)`; 48-hour sweep cron runs every 15 min
 - **No tracking** — no cookies beyond auth, no fingerprinting, no analytics (Plausible, GA or otherwise)
 - **Private like counts** — the JSON response literally does not contain `like_count` for non-authors (`#[serde(skip_serializing_if)]`), so the UI *cannot* leak it
-- **E2EE DMs** — AES-256-GCM + X25519 ECDH v1 envelope shipped for snaps. Long-term keypair lives in IndexedDB; the server stores only ciphertext + ephemeral pubkey + nonce. Migration to MLS is a Phase 4 item; v1 is sufficient for 1:1 messages
-- **Contact import is on-device** — handle-based friend discovery matches against opted-in public handles only. When the Capacitor contacts plugin lands, we hash (SHA-256 + shared salt) email + phone numbers *on the device* and upload only the hashes
+- **E2EE DMs & snaps** — AES-256-GCM + X25519 ECDH v1 envelope. Long-term keypair lives in IndexedDB; the server stores only ciphertext + ephemeral pubkey + nonce
+- **Contact import is on-device** — handle-based friend discovery matches against opted-in public handles only
 - **Refresh-token reuse detection** — using a rotated refresh cookie twice invalidates the whole lineage (OWASP pattern) and forces re-login
-- **Data export + real delete** — GDPR-compliant, planned for Phase 4
+- **Distributed storage** — data replicated across volunteer nodes; E2EE data is unreadable by node operators
 - **Open source** — AGPL-3.0, every commit is public on GitHub
 
 ## Tech stack
@@ -189,13 +190,16 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 | Cache / state | Valkey 8 (Redis-compatible, open-source fork) |
 | Object storage | MinIO (S3-compatible) |
 | Image pipeline | `image` crate + `webp` crate (EXIF-strip → Lanczos3 resize → WebP Q80) |
-| Auth | Hand-rolled Google + GitHub + Apple OAuth / OIDC + PKCE, HS256 JWTs, refresh-token rotation |
-| Email | Postal via `lettre` (SMTP STARTTLS) |
+| Auth | Google + GitHub + Apple OAuth/OIDC + PKCE, HS256 JWTs, refresh-token rotation |
+| Email | Postal HTTP API |
 | Push | VAPID Web Push + service worker; APNs/FCM via Capacitor on mobile |
+| Real-time | WebSocket (Axum built-in) — live DM + typing indicators |
 | Client crypto | `@noble/curves` (X25519) + `@noble/ciphers` (AES-256-GCM), keys in IndexedDB |
+| Federation | ActivityPub (WebFinger, Actor, Inbox, Outbox, HTTP Signatures, NodeInfo 2.0) |
+| Cluster | Rendezvous hash ring, replication queue, request proxy, rebalancing |
 | Mobile shell | Capacitor 6 (iOS + Android) in `apps/mobile/` |
 | Dev infra | Docker Compose (db + cache + storage + mailpit) |
-| Prod infra (staging) | nginx + Let's Encrypt + systemd units on a Linux VM |
+| Prod infra | nginx + Let's Encrypt + systemd units on Linux |
 
 ## Quick start (development)
 
@@ -235,30 +239,28 @@ docker exec -i vonk-social-vonk-db-1 psql -U vonk vonk \
 Vonk-social/
 ├── apps/
 │   ├── web/                # SvelteKit 5 frontend (main UI)
-│   ├── mobile/             # .keep — Capacitor, Phase 3
+│   ├── mobile/             # Capacitor 6 iOS + Android wrapper
 │   └── admin/              # .keep — moderation dashboard, Phase 4+
 ├── packages/
 │   ├── api/                # Rust backend (Axum 0.8, SQLx 0.8)
 │   │   └── src/
-│   │       ├── auth/       # JWT, cookies, Google OIDC, IP hashing
+│   │       ├── auth/       # JWT, cookies, Google/GitHub/Apple OIDC, IP hashing
+│   │       ├── activitypub/# AP types, HTTP signatures, RSA keys
+│   │       ├── cluster/    # hash ring, replication, rebalancing, proxy
 │   │       ├── feed/       # cursor-paginated feed query
-│   │       ├── media/      # shared image pipeline (avatar + posts + snaps)
 │   │       ├── models/     # row + response types
-│   │       └── routes/     # auth / users / posts / feed / follows / snaps / media
+│   │       ├── routes/     # auth / users / posts / feed / follows / snaps / dm / invites / push / admin / activitypub / webfinger / nodeinfo
+│   │       └── ws.rs       # WebSocket hub (real-time DM + typing)
 │   ├── db/
-│   │   ├── migrations/     # 001_initial.sql → 004_repost_pin_bookmarks.sql
+│   │   ├── migrations/     # 001_initial.sql → 007_activitypub.sql
 │   │   └── seed/           # dev-only fixtures
-│   ├── crypto/             # .keep — MLS E2EE library, Phase 3
-│   ├── media/              # .keep — video pipeline, Phase 4
 │   └── vonk-ui/            # .keep — shared components, later
 ├── infra/
-│   ├── nginx/              # vonk-openview site + TLS template
+│   ├── nginx/              # reverse proxy configs
 │   └── scripts/            # deploy-dev.sh
 ├── docs/
-│   ├── notes/auth.md       # wire diagram, Google Console walkthrough
-│   ├── HOSTING.md
-│   ├── FINANCES.md
-│   └── PROJECT_PLAN.md
+│   ├── notes/              # auth.md, phase3.md
+│   └── self-hosting.md
 ├── docker-compose.dev.yml
 ├── CLAUDE.md               # architectural guardrails + phase plan
 └── README.md
@@ -266,20 +268,18 @@ Vonk-social/
 
 ## Self-hosting
 
-The code ships AGPL-3.0 so you can run your own Vonk instance. The
-staging box on `vonk.openview.be` is a good reference for the shape of
-a production deployment:
+The code ships AGPL-3.0 so you can run your own Vonk instance:
 
 - One Linux host, 8 GB RAM, 50 GB disk comfortably hosts it for a small community
 - `docker compose -f docker-compose.dev.yml up -d` provides Postgres / Valkey / MinIO
 - Rust API built with `cargo build --release` and run under systemd
 - SvelteKit built with `npm run build` and served via `node build` under systemd
-- nginx handles TLS + routes `/api/*` → API, `/media/*` → MinIO, everything else → SvelteKit
+- nginx handles TLS + routes `/api/*` → API, `/media/*` → MinIO, `/.well-known/*` + `/ap/*` → API, everything else → SvelteKit
 - Let's Encrypt for certs (`certbot --nginx -d <your-host>`)
 
-See `infra/scripts/deploy-dev.sh` for the current staging deploy.
-Self-hosted instances are standalone today; ActivityPub federation
-would come later if there's demand.
+See `infra/scripts/deploy-dev.sh` for the current deploy script.
+Standalone instances work out of the box; cluster mode (multi-node) is
+enabled via `CLUSTER_ENABLED=true` + `CLUSTER_NODE_ID` env vars.
 
 ## Contributing
 
@@ -307,9 +307,7 @@ Only maintainers can merge PRs. Repo admins retain emergency push access.
 
 ### Highest-value contributions right now
 
-- Frontend for the backend-ready items (bookmark / repost / pin / author stats UI)
-- Native-speaker review of the 13 translated landing locales (fr, de, es, it, pt, pl, sv, da, fi, el, ro, cs, uk) — NL + EN are native-quality, the rest need a look from a native eye
-- Phase 3 E2EE (MLS protocol implementation in `packages/crypto/`)
+- Native-speaker review of the 13 translated locales (fr, de, es, it, pt, pl, sv, da, fi, el, ro, cs, uk)
 - Bug reports + feature suggestions via GitHub Discussions
 - Security issues — see [SECURITY.md](SECURITY.md)
 - [Donate](https://github.com/sponsors/vonk-social) — covers hosting, anything over pays for native reviewers and designers
@@ -329,15 +327,11 @@ goes.
 We're shipping in numbered phases, each merged as its own set of PRs on
 `main`. Current status (April 2026):
 
-- **Phase 1 — Auth & Users** — ✅ merged (PR #1)
-- **Phase 2 — Posts, feed, stories, snaps, follows** — ✅ merged (PRs #2–#8)
-- **Phase 2.5 — Bookmarks / reposts / pins / author counters / story viewers** — ✅ merged (backend PR #9, frontend PR #16)
-- **Landing & multilingual (15 EU languages)** — ✅ merged (PR #11)
-- **Instagram-style bottom nav + dark mode + `/discover` + one-shot reply** — ✅ merged (PRs #8, #13–#14)
-- **Staging on vonk.openview.be** — ✅ live
-- **Primary domain vonk.social + www.vonk.social + host-aware OAuth** — ✅ merged (PR #18)
-- **Phase 3 — MLS E2EE + Capacitor mobile + friends import wizard** — 📋 planned
-- **Phase 4 — Public finances dashboard, short video, Snap Map, streaks** — ⏸ later
+- **Phase 1 — Auth & Users** — ✅ Google + GitHub + Apple sign-in, profiles, onboarding
+- **Phase 2 — Posts, feed, stories, snaps, follows, DMs** — ✅ full social loop
+- **Phase 3 — E2EE, push notifications, friend import, mobile scaffold** — ✅ shipped
+- **Phase 3.5 — Distributed cluster + ActivityPub federation** — ✅ core shipped, Docker deploy planned
+- **Phase 4 — Public finances, short video, groups, events** — ⏸ planned
 
 ## License
 
