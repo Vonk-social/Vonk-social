@@ -1,31 +1,27 @@
-//! Apple Sign in scaffolding.
+//! Apple Sign in — full implementation.
 //!
-//! Apple OIDC is meaningfully different from Google and GitHub:
+//! Apple's OAuth is non-standard:
+//!   1. `client_secret` is an ES256-signed JWT, not a static string.
+//!   2. The token endpoint returns an `id_token` (JWT). The Apple `sub`
+//!      lives in its `sub` claim.
+//!   3. Email + name are only sent on the **first** consent — subsequent
+//!      sign-ins return no email, so the first successful callback is the
+//!      moment we must capture and persist them.
+//!   4. Apple uses `response_mode=form_post` — the callback receives a
+//!      POST with form-encoded body, not a GET with query params.
 //!
-//! 1. `client_secret` is an **ES256-signed JWT** — not a static string. It
-//!    must be (re-)minted from a `.p8` private key + team_id + key_id and
-//!    expires after ≤6 months.
-//! 2. The token endpoint returns an `id_token` (JWT); the Apple `sub`
-//!    lives in its `sub` claim, not a `/userinfo` call.
-//! 3. Email is only disclosed on **first** consent — later sign-ins return
-//!    no email, so the first successful sign-in is the moment we must
-//!    capture and store it.
-//!
-//! This module wires the authorize URL + config plumbing. The token
-//! exchange is intentionally left as TODO until we have the Apple
-//! developer account + .p8 key on hand. `crate::config::AppConfig::
-//! apple_configured()` returns false until then, so the HTTP handler
-//! replies with a clean `apple_not_configured` error and no unfinished
-//! code path is ever hit.
+//! Flow:
+//!   GET  /api/auth/login/apple  → redirect to appleid.apple.com
+//!   POST /api/auth/callback/apple ← Apple POSTs { code, state, id_token, user }
 
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine as _;
 use rand::RngCore;
+use serde::{Deserialize, Serialize};
 
 use crate::config::AppConfig;
 
 pub const AUTHORIZE_URL: &str = "https://appleid.apple.com/auth/authorize";
-#[allow(dead_code)]
 pub const TOKEN_URL: &str = "https://appleid.apple.com/auth/token";
 
 pub fn random_state() -> String {
@@ -47,9 +43,6 @@ pub fn redirect_uri(cfg: &AppConfig, origin: Option<&str>) -> String {
 
 pub fn build_authorize_url(cfg: &AppConfig, origin: Option<&str>, state: &str) -> String {
     let redirect = redirect_uri(cfg, origin);
-    // `response_mode=form_post` is Apple's required mode when requesting
-    // `email` scope. The callback will need to accept POST, not GET — we
-    // intentionally defer that wiring until creds exist.
     let params = [
         ("client_id", cfg.apple_client_id.as_str()),
         ("redirect_uri", redirect.as_str()),
@@ -64,4 +57,155 @@ pub fn build_authorize_url(cfg: &AppConfig, origin: Option<&str>, state: &str) -
         .collect::<Vec<_>>()
         .join("&");
     format!("{AUTHORIZE_URL}?{qs}")
+}
+
+/// Mint the ephemeral ES256-signed JWT that Apple uses as `client_secret`.
+/// Valid for up to 6 months; we mint a fresh one per token exchange (simpler
+/// than caching + refreshing).
+pub fn mint_client_secret(cfg: &AppConfig) -> anyhow::Result<String> {
+    use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+
+    let now = chrono::Utc::now().timestamp() as u64;
+    let claims = AppleClientClaims {
+        iss: cfg.apple_team_id.clone(),
+        iat: now,
+        exp: now + 300, // 5 minutes is plenty for a single exchange
+        aud: "https://appleid.apple.com".to_string(),
+        sub: cfg.apple_client_id.clone(),
+    };
+    let mut header = Header::new(Algorithm::ES256);
+    header.kid = Some(cfg.apple_key_id.clone());
+
+    let key = EncodingKey::from_ec_pem(cfg.apple_private_key.as_bytes())
+        .map_err(|e| anyhow::anyhow!("parse Apple .p8 key: {e}"))?;
+
+    let token = encode(&header, &claims, &key)
+        .map_err(|e| anyhow::anyhow!("sign Apple client_secret: {e}"))?;
+    Ok(token)
+}
+
+#[derive(Debug, Serialize)]
+struct AppleClientClaims {
+    iss: String,
+    iat: u64,
+    exp: u64,
+    aud: String,
+    sub: String,
+}
+
+/// Exchange the authorization code for tokens.
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+pub struct AppleTokenResponse {
+    pub access_token: String,
+    pub id_token: String,
+    #[allow(dead_code)]
+    pub token_type: Option<String>,
+    #[allow(dead_code)]
+    pub expires_in: Option<u64>,
+}
+
+pub async fn exchange_code(
+    http: &reqwest::Client,
+    cfg: &AppConfig,
+    origin: Option<&str>,
+    code: &str,
+) -> anyhow::Result<AppleTokenResponse> {
+    let client_secret = mint_client_secret(cfg)?;
+    let redirect = redirect_uri(cfg, origin);
+
+    let params = [
+        ("client_id", cfg.apple_client_id.as_str()),
+        ("client_secret", client_secret.as_str()),
+        ("code", code),
+        ("grant_type", "authorization_code"),
+        ("redirect_uri", redirect.as_str()),
+    ];
+
+    let res = http
+        .post(TOKEN_URL)
+        .form(&params)
+        .send()
+        .await?;
+
+    if !res.status().is_success() {
+        let body = res.text().await.unwrap_or_default();
+        anyhow::bail!("Apple token exchange failed: {body}");
+    }
+
+    Ok(res.json().await?)
+}
+
+/// Decode the id_token claims WITHOUT verifying the signature.
+/// Apple's JWKS verification is a nice-to-have but not strictly required
+/// since we received the id_token directly from Apple over TLS in the
+/// same HTTP response as the code exchange — there's no MITM vector.
+/// Adding JWKS verification is a Phase 4 hardening item.
+#[derive(Debug, Deserialize)]
+pub struct AppleIdTokenClaims {
+    pub sub: String,
+    pub email: Option<String>,
+    pub email_verified: Option<serde_json::Value>, // Apple sends "true" as string or bool
+    #[allow(dead_code)]
+    pub iss: Option<String>,
+}
+
+pub fn decode_id_token(id_token: &str) -> anyhow::Result<AppleIdTokenClaims> {
+    use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+
+    // Decode without signature verification — we trust the TLS channel.
+    let mut validation = Validation::new(Algorithm::RS256);
+    validation.insecure_disable_signature_validation();
+    validation.set_audience(&["social.vonk.signin"]);
+    validation.set_issuer(&["https://appleid.apple.com"]);
+
+    let token_data = decode::<AppleIdTokenClaims>(
+        id_token,
+        &DecodingKey::from_secret(&[]), // unused due to disabled validation
+        &validation,
+    )
+    .map_err(|e| anyhow::anyhow!("decode Apple id_token: {e}"))?;
+
+    Ok(token_data.claims)
+}
+
+impl AppleIdTokenClaims {
+    pub fn is_email_verified(&self) -> bool {
+        match &self.email_verified {
+            Some(serde_json::Value::Bool(b)) => *b,
+            Some(serde_json::Value::String(s)) => s == "true",
+            _ => false,
+        }
+    }
+}
+
+/// Apple sends user info (name) as a JSON string in the `user` form field,
+/// but only on the FIRST consent. Subsequent logins don't include it.
+#[derive(Debug, Deserialize)]
+pub struct AppleUserInfo {
+    pub name: Option<AppleUserName>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AppleUserName {
+    #[serde(rename = "firstName")]
+    pub first_name: Option<String>,
+    #[serde(rename = "lastName")]
+    pub last_name: Option<String>,
+}
+
+impl AppleUserInfo {
+    pub fn display_name(&self) -> Option<String> {
+        self.name.as_ref().and_then(|n| {
+            let parts: Vec<&str> = [n.first_name.as_deref(), n.last_name.as_deref()]
+                .into_iter()
+                .flatten()
+                .collect();
+            if parts.is_empty() {
+                None
+            } else {
+                Some(parts.join(" "))
+            }
+        })
+    }
 }
