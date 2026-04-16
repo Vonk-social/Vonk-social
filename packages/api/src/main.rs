@@ -19,11 +19,13 @@ use tower_http::trace::TraceLayer;
 mod auth;
 mod config;
 mod db;
+mod email;
 mod error;
 mod feed;
 mod jobs;
 mod media;
 mod models;
+mod push;
 mod routes;
 mod s3;
 mod state;
@@ -133,6 +135,8 @@ async fn main() -> anyhow::Result<()> {
         .merge(routes::feed::router())
         .merge(routes::follows::router())
         .merge(routes::snaps::router())
+        .merge(routes::invites::router())
+        .merge(routes::push::router())
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);

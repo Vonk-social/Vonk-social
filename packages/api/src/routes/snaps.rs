@@ -54,6 +54,19 @@ struct SendSnapRequest {
     /// `view_once` (default) or `view_24h`.
     #[serde(default = "default_view_policy")]
     view_policy: String,
+
+    // ── E2EE v1 envelope (all three or none) ─────────────────
+    // Base64-URL (no padding) of the sender's ephemeral X25519 pubkey.
+    #[serde(default)]
+    ephemeral_pubkey: Option<String>,
+    // Base64-URL (no padding) of the 12-byte AES-GCM nonce.
+    #[serde(default)]
+    nonce: Option<String>,
+    // Base64-URL (no padding) of the AES-GCM ciphertext wrapping the
+    // media key (not the media bytes themselves — those are already
+    // in MinIO; v1 only encrypts the per-snap key envelope).
+    #[serde(default)]
+    ciphertext: Option<String>,
 }
 
 fn default_view_policy() -> String {
@@ -152,22 +165,68 @@ async fn send_snap(
         }
     };
 
-    // Insert the message. `ciphertext` holds the storage_key bytes as a
-    // placeholder for the future MLS-encrypted blob.
+    // Decide encryption version based on the presence of a full E2EE envelope.
+    let have_envelope = req.ephemeral_pubkey.is_some()
+        && req.nonce.is_some()
+        && req.ciphertext.is_some();
+    let (encryption_version, ciphertext_bytes, ephemeral_bytes, nonce_bytes, protocol) =
+        if have_envelope {
+            use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+            use base64::Engine as _;
+            let ct = URL_SAFE_NO_PAD
+                .decode(req.ciphertext.as_ref().unwrap())
+                .map_err(|_| ApiError::bad_request("bad_ciphertext", "ciphertext must be base64url"))?;
+            let ep = URL_SAFE_NO_PAD
+                .decode(req.ephemeral_pubkey.as_ref().unwrap())
+                .map_err(|_| {
+                    ApiError::bad_request("bad_ephemeral", "ephemeral_pubkey must be base64url")
+                })?;
+            let nc = URL_SAFE_NO_PAD
+                .decode(req.nonce.as_ref().unwrap())
+                .map_err(|_| ApiError::bad_request("bad_nonce", "nonce must be base64url"))?;
+            if ep.len() != 32 {
+                return Err(ApiError::bad_request(
+                    "bad_ephemeral_len",
+                    "ephemeral_pubkey must be 32 bytes (X25519)",
+                ));
+            }
+            if nc.len() != 12 {
+                return Err(ApiError::bad_request(
+                    "bad_nonce_len",
+                    "nonce must be 12 bytes (AES-GCM)",
+                ));
+            }
+            (1i16, ct, Some(ep), Some(nc), "aes-gcm-x25519-v1")
+        } else {
+            // Legacy v0 — ciphertext column holds the storage_key bytes.
+            (
+                0i16,
+                storage_key.as_bytes().to_vec(),
+                None,
+                None,
+                "plaintext-phase2",
+            )
+        };
+
     let snap_uuid = Uuid::new_v4();
     sqlx::query(
         "INSERT INTO messages \
             (uuid, conversation_id, sender_id, ciphertext, protocol_version, \
-             content_type, view_policy, expires_at, media_id) \
-         VALUES ($1, $2, $3, $4, 'plaintext-phase2', 'image', $5, $6, $7)",
+             content_type, view_policy, expires_at, media_id, \
+             encryption_version, ephemeral_pubkey, nonce) \
+         VALUES ($1, $2, $3, $4, $5, 'image', $6, $7, $8, $9, $10, $11)",
     )
     .bind(snap_uuid)
     .bind(conversation_id)
     .bind(me.id)
-    .bind(storage_key.as_bytes())
+    .bind(&ciphertext_bytes)
+    .bind(protocol)
     .bind(&req.view_policy)
     .bind(expires_at)
     .bind(media_id)
+    .bind(encryption_version)
+    .bind(ephemeral_bytes.as_deref())
+    .bind(nonce_bytes.as_deref())
     .execute(&mut *tx)
     .await?;
 
@@ -304,6 +363,17 @@ async fn sent(
 struct ViewSnapResponse {
     url: String,
     expires_at: DateTime<Utc>,
+    /// 0 = plaintext (legacy); 1 = AES-GCM-X25519 v1 envelope attached.
+    encryption_version: i16,
+    /// base64url of sender's ephemeral X25519 pubkey (v1 only).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ephemeral_pubkey: Option<String>,
+    /// base64url of the 12-byte AES-GCM nonce (v1 only).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    nonce: Option<String>,
+    /// base64url of the AES-GCM ciphertext wrapping the per-snap key (v1 only).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ciphertext: Option<String>,
 }
 
 async fn view(
@@ -311,11 +381,15 @@ async fn view(
     AuthUser(me): AuthUser,
     Path(snap_uuid): Path<Uuid>,
 ) -> ApiResult<Json<DataEnvelope<ViewSnapResponse>>> {
-    // Find the deliverable row for (this snap, this viewer).
+    // Find the deliverable row for (this snap, this viewer), pulling the
+    // E2EE envelope along with it (from `messages` directly — snap_deliverable
+    // joins to messages but doesn't re-project the crypto columns).
     let row = sqlx::query(
         r#"
-        SELECT sd.id, sd.media_id, sd.viewed_by_me, sd.expires_at
+        SELECT sd.id, sd.media_id, sd.viewed_by_me, sd.expires_at,
+               m.encryption_version, m.ephemeral_pubkey, m.nonce, m.ciphertext
           FROM snap_deliverable sd
+          JOIN messages m ON m.id = sd.id
          WHERE sd.uuid = $1 AND sd.recipient_id = $2
         "#,
     )
@@ -381,8 +455,33 @@ async fn view(
     .execute(&state.db)
     .await?;
 
+    // Project the envelope (if any) back to the caller so they can
+    // decrypt the ciphertext client-side.
+    let enc_version: i16 = row.try_get("encryption_version").unwrap_or(0);
+    let (ephemeral_pubkey, nonce, ciphertext) = if enc_version > 0 {
+        use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+        use base64::Engine as _;
+        let ep: Option<Vec<u8>> = row.try_get("ephemeral_pubkey").ok();
+        let nc: Option<Vec<u8>> = row.try_get("nonce").ok();
+        let ct: Option<Vec<u8>> = row.try_get("ciphertext").ok();
+        (
+            ep.map(|b| URL_SAFE_NO_PAD.encode(b)),
+            nc.map(|b| URL_SAFE_NO_PAD.encode(b)),
+            ct.map(|b| URL_SAFE_NO_PAD.encode(b)),
+        )
+    } else {
+        (None, None, None)
+    };
+
     Ok(Json(DataEnvelope {
-        data: ViewSnapResponse { url, expires_at },
+        data: ViewSnapResponse {
+            url,
+            expires_at,
+            encryption_version: enc_version,
+            ephemeral_pubkey,
+            nonce,
+            ciphertext,
+        },
     }))
 }
 
