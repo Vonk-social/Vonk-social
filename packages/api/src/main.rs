@@ -122,13 +122,20 @@ async fn main() -> anyhow::Result<()> {
         config: cfg.clone(),
     };
 
-    // CORS: lock to the configured WEB_URL, allow credentials for cookies.
+    // CORS: reflect the request Origin only if it's in the allowed list.
+    // This supports multi-domain (vonk.social + vonk.openview.be) without
+    // the wildcard (which is incompatible with `allow_credentials`).
+    let allowed: std::collections::HashSet<HeaderValue> = cfg
+        .cors_origins
+        .iter()
+        .filter_map(|o| o.parse::<HeaderValue>().ok())
+        .collect();
     let cors = CorsLayer::new()
-        .allow_origin(
-            cfg.web_url
-                .parse::<HeaderValue>()
-                .map_err(|e| anyhow::anyhow!("invalid WEB_URL: {e}"))?,
-        )
+        .allow_origin(tower_http::cors::AllowOrigin::predicate(
+            move |origin: &HeaderValue, _parts: &axum::http::request::Parts| {
+                allowed.contains(origin)
+            },
+        ))
         .allow_credentials(true)
         .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
         .allow_headers([CONTENT_TYPE, AUTHORIZATION]);
