@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, onMount } from 'svelte';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
 	import LikeButton from './LikeButton.svelte';
 	import BookmarkButton from './BookmarkButton.svelte';
@@ -24,7 +24,10 @@
 
 	let { post, user = null, depth = 0 }: Props = $props();
 
-	let expanded = $state(false);
+	// Auto-expand recent replies on top-level posts that have comments.
+	const autoExpand = depth === 0 && (post.reply_count ?? 0) > 0;
+
+	let expanded = $state(autoExpand);
 	let composing = $state(false);
 	let replies = $state<PublicPost[]>([]);
 	let cursor = $state<string | null>(null);
@@ -54,11 +57,11 @@
 		!!post.repost_of_uuid && (!post.content || post.content.trim().length === 0)
 	);
 
-	async function load() {
+	async function load(limit = 20) {
 		if (loading || loaded) return;
 		loading = true;
 		try {
-			const page = await fetchReplies(post.uuid, { limit: 20 });
+			const page = await fetchReplies(post.uuid, { limit });
 			replies = page.data;
 			cursor = page.cursor;
 			hasMore = page.has_more;
@@ -69,6 +72,11 @@
 			loading = false;
 		}
 	}
+
+	// Auto-fetch the 3 most recent replies for posts that have comments.
+	onMount(() => {
+		if (autoExpand) load(3);
+	});
 
 	async function loadMore() {
 		if (!hasMore || loading) return;
