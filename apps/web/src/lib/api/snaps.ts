@@ -22,7 +22,14 @@ export type SentSnapItem = {
 };
 
 export async function sendSnap(
-	body: { to_username: string; media_uuid: string; view_policy?: ViewPolicy },
+	body: {
+		to_username: string;
+		media_uuid: string;
+		view_policy?: ViewPolicy;
+		ephemeral_pubkey?: string;
+		nonce?: string;
+		ciphertext?: string;
+	},
 	cookies?: string
 ): Promise<{ uuid: string }> {
 	const res = await apiFetch('/api/snaps', {

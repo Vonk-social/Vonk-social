@@ -7,6 +7,8 @@
 	import { uploadMedia } from '$lib/api/media';
 	import { createPost, type Visibility } from '$lib/api/posts';
 	import { sendSnap } from '$lib/api/snaps';
+	import { getOrCreateKeypair, encryptFor } from '$lib/e2ee';
+	import { apiFetch } from '$lib/api/core';
 	import { toasts } from '$lib/stores/toasts';
 	import type { PageProps } from './$types';
 
@@ -58,15 +60,36 @@
 				toasts.push('success', 'Story staat online (24u)');
 				goto('/home');
 			} else if (kind === 'snap') {
-				if (!snapRecipient.trim()) {
+				const recipient = snapRecipient.trim().replace(/^@/, '');
+				if (!recipient) {
 					toasts.push('error', 'Vul een gebruikersnaam in');
 					stage = 'choose';
 					return;
 				}
+
+				// Try E2EE: fetch recipient's public key + encrypt a random snap key.
+				let envelope: { ephemeral_pubkey: string; nonce: string; ciphertext: string } | undefined;
+				try {
+					const profileRes = await apiFetch(`/api/users/${encodeURIComponent(recipient)}`);
+					if (profileRes.ok) {
+						const profile = (await profileRes.json()).data as { public_key?: string | null };
+						if (profile.public_key) {
+							// Ensure we have our own keypair registered.
+							await getOrCreateKeypair();
+							// Encrypt a random 32-byte snap key with the recipient's X25519 pubkey.
+							const snapKey = crypto.getRandomValues(new Uint8Array(32));
+							envelope = await encryptFor(profile.public_key, snapKey);
+						}
+					}
+				} catch {
+					// E2EE not possible — send plaintext (v0). Not fatal.
+				}
+
 				await sendSnap({
-					to_username: snapRecipient.trim().replace(/^@/, ''),
+					to_username: recipient,
 					media_uuid: media.uuid,
-					view_policy: 'view_once'
+					view_policy: 'view_once',
+					...(envelope ?? {})
 				});
 				toasts.push('success', `Snap verstuurd aan @${snapRecipient}`);
 				goto('/dm');
