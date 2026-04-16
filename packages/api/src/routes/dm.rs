@@ -454,6 +454,43 @@ async fn send_message(
 
     let now = Utc::now();
 
+    // Push notification to the other person in the conversation.
+    {
+        let recipient_id: Option<(i64,)> = sqlx::query_as(
+            "SELECT user_id FROM conversation_members \
+             WHERE conversation_id = $1 AND user_id != $2 LIMIT 1",
+        )
+        .bind(conv_id)
+        .bind(me.id)
+        .fetch_optional(&state.db)
+        .await?;
+        if let Some((rid,)) = recipient_id {
+            let db = state.db.clone();
+            let cfg = state.config.clone();
+            let display = me.display_name.clone();
+            let preview = if content.len() > 80 {
+                format!("{}…", &content[..80])
+            } else {
+                content.clone()
+            };
+            tokio::spawn(async move {
+                crate::push::notify_user(
+                    &db,
+                    &cfg,
+                    rid,
+                    crate::push::NotifyKind::Dm,
+                    &crate::push::PushPayload {
+                        title: display.to_string(),
+                        body: preview,
+                        url: format!("/dm/{conv_uuid}"),
+                        tag: Some(format!("dm-{conv_uuid}")),
+                    },
+                )
+                .await;
+            });
+        }
+    }
+
     // Broadcast to all WebSocket subscribers in this conversation.
     state
         .ws_hub

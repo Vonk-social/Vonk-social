@@ -79,7 +79,7 @@ async fn follow(
     }
 
     let status = if target.is_private { "pending" } else { "active" };
-    sqlx::query(
+    let result = sqlx::query(
         "INSERT INTO follows (follower_id, following_id, status) \
          VALUES ($1, $2, $3) \
          ON CONFLICT (follower_id, following_id) DO NOTHING",
@@ -89,6 +89,30 @@ async fn follow(
     .bind(status)
     .execute(&state.db)
     .await?;
+
+    // Push notification: "Dimitry volgt je nu" (only on new follow, not re-follow).
+    if result.rows_affected() > 0 && status == "active" {
+        let db = state.db.clone();
+        let cfg = state.config.clone();
+        let display = me.display_name.clone();
+        let my_username = me.username.clone();
+        let target_id = target.id;
+        tokio::spawn(async move {
+            crate::push::notify_user(
+                &db,
+                &cfg,
+                target_id,
+                crate::push::NotifyKind::Follow,
+                &crate::push::PushPayload {
+                    title: "Nieuwe volger".to_string(),
+                    body: format!("{display} volgt je nu"),
+                    url: format!("/u/{my_username}"),
+                    tag: Some(format!("follow-{my_username}")),
+                },
+            )
+            .await;
+        });
+    }
 
     Ok(Json(FollowResponse {
         follow_state: if status == "pending" { "pending" } else { "active" },

@@ -220,6 +220,85 @@ async fn create_post(
 
     tx.commit().await?;
 
+    // Push notifications for mentions + reply-to author.
+    {
+        let db = state.db.clone();
+        let cfg = state.config.clone();
+        let display = user.display_name.clone();
+        let preview = req
+            .content
+            .as_deref()
+            .unwrap_or("")
+            .chars()
+            .take(80)
+            .collect::<String>();
+        let post_url = format!("/post/{post_uuid}");
+
+        // Notify mentioned users.
+        for &mid in &mentioned_ids {
+            if mid == user.id {
+                continue;
+            }
+            let db = db.clone();
+            let cfg = cfg.clone();
+            let display = display.clone();
+            let preview = preview.clone();
+            let url = post_url.clone();
+            tokio::spawn(async move {
+                crate::push::notify_user(
+                    &db,
+                    &cfg,
+                    mid,
+                    crate::push::NotifyKind::Mention,
+                    &crate::push::PushPayload {
+                        title: format!("{display} heeft je genoemd"),
+                        body: preview,
+                        url,
+                        tag: Some("mention".to_string()),
+                    },
+                )
+                .await;
+            });
+        }
+
+        // Notify reply-to author.
+        if let Some(rt_id) = reply_to_id {
+            let db2 = db.clone();
+            let cfg2 = cfg.clone();
+            let display2 = display.clone();
+            let preview2 = preview.clone();
+            let url2 = post_url.clone();
+            let author_id = user.id;
+            tokio::spawn(async move {
+                let parent_author: Option<(i64,)> = sqlx::query_as(
+                    "SELECT user_id FROM posts WHERE id = $1",
+                )
+                .bind(rt_id)
+                .fetch_optional(&db2)
+                .await
+                .ok()
+                .flatten();
+                if let Some((pid,)) = parent_author {
+                    if pid != author_id {
+                        crate::push::notify_user(
+                            &db2,
+                            &cfg2,
+                            pid,
+                            crate::push::NotifyKind::Reply,
+                            &crate::push::PushPayload {
+                                title: format!("{display2} heeft gereageerd"),
+                                body: preview2,
+                                url: url2,
+                                tag: Some("reply".to_string()),
+                            },
+                        )
+                        .await;
+                    }
+                }
+            });
+        }
+    }
+
     let post = load_public_post(&state, user.id, post_id).await?;
     Ok((StatusCode::CREATED, Json(DataEnvelope { data: post })))
 }
