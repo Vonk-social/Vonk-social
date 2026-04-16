@@ -68,7 +68,7 @@ async fn actor(
     let public_key_pem = match keys::ensure_keypair(&state.db, user.id).await {
         Ok(pem) => pem,
         Err(e) => {
-            tracing::error!(error = %e, "failed to ensure AP keypair");
+            tracing::error!(error = %e, chain = ?e.source(), "failed to ensure AP keypair");
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(serde_json::json!({"error": {"code": "internal_error", "message": "internal server error"}})),

@@ -54,7 +54,10 @@ pub async fn ensure_keypair(db: &PgPool, user_id: i64) -> Result<String> {
     .bind(&private_pem)
     .execute(db)
     .await
-    .context("storing RSA keypair")?;
+    .map_err(|e| {
+        tracing::error!(error = %e, user_id, "SQL error storing RSA keypair");
+        anyhow::anyhow!("storing RSA keypair: {e}")
+    })?;
 
     Ok(public_pem)
 }
