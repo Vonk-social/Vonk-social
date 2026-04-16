@@ -150,21 +150,71 @@ pub struct AppleIdTokenClaims {
     pub iss: Option<String>,
 }
 
-pub fn decode_id_token(id_token: &str) -> anyhow::Result<AppleIdTokenClaims> {
-    use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+/// Apple's JWKS endpoint — returns the public keys used to sign id_tokens.
+const APPLE_JWKS_URL: &str = "https://appleid.apple.com/auth/keys";
 
-    // Decode without signature verification — we trust the TLS channel.
+#[derive(Debug, Deserialize)]
+struct AppleJwks {
+    keys: Vec<AppleJwk>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AppleJwk {
+    kid: String,
+    kty: String,
+    n: String,
+    e: String,
+    #[allow(dead_code)]
+    alg: Option<String>,
+}
+
+/// Decode and **verify** the Apple id_token using Apple's JWKS.
+///
+/// 1. Decode the JWT header to get the `kid`.
+/// 2. Fetch Apple's JWKS and find the matching key.
+/// 3. Verify the RS256 signature.
+/// 4. Validate audience + issuer.
+pub async fn decode_id_token(
+    http: &reqwest::Client,
+    id_token: &str,
+) -> anyhow::Result<AppleIdTokenClaims> {
+    use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Validation};
+
+    // 1. Extract kid from the token header.
+    let header = decode_header(id_token)
+        .map_err(|e| anyhow::anyhow!("decode Apple JWT header: {e}"))?;
+    let kid = header
+        .kid
+        .ok_or_else(|| anyhow::anyhow!("Apple id_token has no kid in header"))?;
+
+    // 2. Fetch Apple's JWKS.
+    let jwks: AppleJwks = http
+        .get(APPLE_JWKS_URL)
+        .send()
+        .await
+        .map_err(|e| anyhow::anyhow!("fetch Apple JWKS: {e}"))?
+        .json()
+        .await
+        .map_err(|e| anyhow::anyhow!("parse Apple JWKS: {e}"))?;
+
+    // 3. Find the key matching the kid.
+    let jwk = jwks
+        .keys
+        .iter()
+        .find(|k| k.kid == kid && k.kty == "RSA")
+        .ok_or_else(|| anyhow::anyhow!("Apple JWKS has no RSA key with kid={kid}"))?;
+
+    // 4. Build the decoding key from n + e (RSA modulus + exponent).
+    let decoding_key = DecodingKey::from_rsa_components(&jwk.n, &jwk.e)
+        .map_err(|e| anyhow::anyhow!("build RSA key from JWKS: {e}"))?;
+
+    // 5. Verify signature + claims.
     let mut validation = Validation::new(Algorithm::RS256);
-    validation.insecure_disable_signature_validation();
     validation.set_audience(&["social.vonk.signin"]);
     validation.set_issuer(&["https://appleid.apple.com"]);
 
-    let token_data = decode::<AppleIdTokenClaims>(
-        id_token,
-        &DecodingKey::from_secret(&[]), // unused due to disabled validation
-        &validation,
-    )
-    .map_err(|e| anyhow::anyhow!("decode Apple id_token: {e}"))?;
+    let token_data = decode::<AppleIdTokenClaims>(id_token, &decoding_key, &validation)
+        .map_err(|e| anyhow::anyhow!("verify Apple id_token: {e}"))?;
 
     Ok(token_data.claims)
 }

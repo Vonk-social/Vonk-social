@@ -591,8 +591,9 @@ async fn callback_apple(
     .await
     .map_err(ApiError::Upstream)?;
 
-    // Decode the id_token to get sub + email.
-    let claims = oauth_apple::decode_id_token(&tokens.id_token)
+    // Decode + verify the id_token against Apple's JWKS (RS256 signature check).
+    let claims = oauth_apple::decode_id_token(&state.http, &tokens.id_token)
+        .await
         .map_err(|e| ApiError::Upstream(anyhow::anyhow!("id_token: {e}")))?;
 
     // Parse user info (name) — only present on first consent.
