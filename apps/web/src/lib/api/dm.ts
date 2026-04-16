@@ -40,7 +40,10 @@ export async function startConversation(
 		cookies
 	});
 	if (!res.ok) {
-		const err = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
+		const err = (await res.json().catch(() => ({}))) as { error?: { code?: string; message?: string } };
+		if (res.status === 404) {
+			throw new Error('Gebruiker niet gevonden. Controleer de gebruikersnaam.');
+		}
 		throw new Error(err.error?.message ?? `startConversation ${res.status}`);
 	}
 	return (await res.json()).data;
