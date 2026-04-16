@@ -144,11 +144,11 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 | Docker one-click deploy for volunteers | 📋 |
 | Node health dashboard (admin UI) | 📋 |
 
-### Anti-abuse 📋
+### Anti-abuse ✅
 
 | Feature | Status |
 |---|---|
-| Unique avatar enforcement (perceptual hash — no two users can have the same profile photo) | 📋 |
+| Unique avatar enforcement (perceptual hash — no two users can have the same profile photo) | ✅ |
 | Rate-limited account creation per IP | 📋 |
 
 ### Phase 4+ — Content & growth ⏸
