@@ -17,6 +17,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 mod auth;
+mod cluster;
 mod config;
 mod db;
 mod email;
@@ -98,6 +99,9 @@ async fn main() -> anyhow::Result<()> {
     // (CLAUDE.md §9).
     jobs::ip_sweep::spawn(db.clone());
 
+    // Background: cluster heartbeat — mark dead nodes after 90s silence.
+    cluster::heartbeat::spawn(db.clone());
+
     // Valkey (Redis-compatible).
     let redis_client = redis::Client::open(cfg.redis_url.as_str())?;
     let redis = redis::aio::ConnectionManager::new(redis_client).await?;
@@ -152,6 +156,8 @@ async fn main() -> anyhow::Result<()> {
         .merge(routes::snaps::router())
         .merge(routes::invites::router())
         .merge(routes::push::router())
+        .merge(routes::cluster::router())
+        .merge(routes::admin::nodes::router())
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state);

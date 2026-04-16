@@ -20,6 +20,10 @@
 	"landing.pillar4.title": "Your pace, your feed",
 	"landing.pillar4.body": "Chronological timeline. No engagement algorithm, no dopamine loops, no 'suggested for you'. And likes? Only the author sees how many people appreciated a post — you decide for yourself whether that should shape your mood.",
 
+	"landing.distributed.title": "Distributed, not centralised",
+	"landing.distributed.body": "Vonk doesn't run on a single server. Your data is encrypted and spread across multiple nodes — like RAID for hard drives. If one fails, the rest keeps going. Anyone can host a node and contribute to the network. DMs are end-to-end encrypted: not even the host can read them.",
+	"landing.distributed.cta": "Become a Vonk host",
+
 	"landing.finances.title": "Everything transparent",
 	"landing.finances.body": "Every euro Vonk receives and spends is shown publicly. Donations, invoices, hosting costs, charity transfers — all live-readable by anyone. Soon at /open.",
 

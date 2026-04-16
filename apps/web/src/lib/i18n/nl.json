@@ -20,6 +20,10 @@
 	"landing.pillar4.title": "Jouw tempo, jouw feed",
 	"landing.pillar4.body": "Chronologische tijdlijn. Geen engagement-algoritme, geen dopamine-loops, geen 'suggested for you'. En likes? Alleen de auteur ziet hoe veel mensen zijn post apprecieerden — jij beslist zelf of die dingen je stemming moeten bepalen.",
 
+	"landing.distributed.title": "Gedistribueerd, niet gecentraliseerd",
+	"landing.distributed.body": "Vonk draait niet op één server. Jouw data wordt versleuteld verspreid over meerdere nodes — zoals RAID bij harde schijven. Als er eentje uitvalt, draait de rest gewoon door. Iedereen kan een node hosten en zo bijdragen aan het netwerk. DM's zijn end-to-end versleuteld: zelfs de node-beheerder kan ze niet lezen.",
+	"landing.distributed.cta": "Word een Vonk-host",
+
 	"landing.finances.title": "Alles transparant",
 	"landing.finances.body": "Elke euro die Vonk ontvangt en uitgeeft wordt publiek getoond. Donaties, facturen, hosting-kosten, doorstortingen naar goede doelen — alles live leesbaar, door iedereen. Binnenkort te volgen op /open.",
 

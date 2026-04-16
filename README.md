@@ -39,6 +39,12 @@ end-to-end but many features are still under construction. See
 2. **No data sales.** Your data never leaves the platform. No third parties, no analytics partnerships.
 3. **No algorithmic manipulation.** The feed is strictly reverse-chronological. The only suggestions are *people you may know* based on mutual connections — never content-based.
 
+**Plus: distributed by design.** Vonk is not a single server — it's a
+cluster of volunteer-hosted nodes. Your data is encrypted and replicated
+across multiple nodes (RAID-style). If one goes down, the rest keeps
+running. DMs are end-to-end encrypted: even node operators can't read
+them. [Want to host a node?](https://vonk.social/host)
+
 The full list of architectural guardrails is in [CLAUDE.md §Non-Negotiable Rules](CLAUDE.md).
 
 ## How is Vonk funded?
