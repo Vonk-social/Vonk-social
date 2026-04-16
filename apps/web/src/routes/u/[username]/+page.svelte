@@ -76,16 +76,46 @@
 						href="/settings"
 						class="inline-block rounded-full border border-border bg-white px-5 py-2 text-center text-sm font-semibold text-ink hover:bg-border/40"
 					>Bewerk profiel</a>
-					<a
-						href="/bookmarks"
-						class="inline-block rounded-full border border-border bg-white px-5 py-2 text-center text-sm font-semibold text-ink hover:bg-border/40"
-					>🔖 Bookmarks</a>
 				{:else}
 					<FollowButton username={data.profile.username} initial={data.profile.follow_state} />
 				{/if}
 			</div>
 		</div>
 	</header>
+
+	<!-- Vrienden blok — alleen op je eigen profiel -->
+	{#if data.profile.follow_state === 'self'}
+		<section class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+			<a
+				href="/u/{data.profile.username}/followers"
+				class="vonk-card flex flex-col items-center gap-1 py-4 transition-colors hover:bg-border/20"
+			>
+				<span class="text-2xl font-bold text-ink">{data.profile.followers_count}</span>
+				<span class="text-sm text-muted">Volgers</span>
+			</a>
+			<a
+				href="/u/{data.profile.username}/following"
+				class="vonk-card flex flex-col items-center gap-1 py-4 transition-colors hover:bg-border/20"
+			>
+				<span class="text-2xl font-bold text-ink">{data.profile.following_count}</span>
+				<span class="text-sm text-muted">Volgend</span>
+			</a>
+			<a
+				href="/invite"
+				class="vonk-card flex flex-col items-center gap-1 py-4 transition-colors hover:bg-border/20"
+			>
+				<span class="text-2xl">✉️</span>
+				<span class="text-sm text-muted">Uitnodigen</span>
+			</a>
+			<a
+				href="/bookmarks"
+				class="vonk-card flex flex-col items-center gap-1 py-4 transition-colors hover:bg-border/20"
+			>
+				<span class="text-2xl">🔖</span>
+				<span class="text-sm text-muted">Bookmarks</span>
+			</a>
+		</section>
+	{/if}
 
 	<section class="mt-6">
 		<h2 class="mb-3 font-display text-lg font-bold text-ink">Posts</h2>

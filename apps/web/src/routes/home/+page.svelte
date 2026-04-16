@@ -52,6 +52,7 @@
 			<span class="font-display text-xl font-bold text-ink">Vonk</span>
 		</a>
 		<nav class="flex items-center gap-1">
+			<a href="/invite" class="rounded-full p-2 hover:bg-border" aria-label="Vrienden uitnodigen" title="Vrienden uitnodigen">✉️</a>
 			<a href="/settings" class="rounded-full p-2 hover:bg-border" aria-label="Instellingen">⚙️</a>
 			<ThemeToggle />
 		</nav>
