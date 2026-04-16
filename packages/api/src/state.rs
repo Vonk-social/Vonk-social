@@ -4,7 +4,10 @@ use std::sync::Arc;
 
 use redis::aio::ConnectionManager;
 use sqlx::PgPool;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
+use crate::cluster::ring::HashRing;
 use crate::config::AppConfig;
 
 /// Cloneable handle holding all long-lived resources.
@@ -18,4 +21,10 @@ pub struct AppState {
     pub s3: aws_sdk_s3::Client,
     pub http: reqwest::Client,
     pub config: Arc<AppConfig>,
+
+    // ── Cluster (Phase 3.5) ─────────────────────────────────
+    /// This node's UUID in cluster_nodes. None when running standalone.
+    pub self_node_id: Option<Uuid>,
+    /// The current hash ring. Refreshed every 30s by ring_refresh task.
+    pub cluster_ring: Option<Arc<RwLock<HashRing>>>,
 }

@@ -87,6 +87,12 @@ pub struct AppConfig {
     pub vapid_private_key: String,
     #[allow(dead_code)] // Used once web push dispatch lands in Phase 3.1.
     pub vapid_subject: String,
+
+    // Cluster (Phase 3.5)
+    pub cluster_enabled: bool,
+    pub cluster_node_id: Option<String>,
+    #[allow(dead_code)] // Used by cluster routes for inter-node auth.
+    pub cluster_secret: String,
 }
 
 impl AppConfig {
@@ -172,6 +178,9 @@ impl AppConfig {
             vapid_public_key: env_or("VAPID_PUBLIC_KEY", ""),
             vapid_private_key: env_or("VAPID_PRIVATE_KEY", ""),
             vapid_subject: env_or("VAPID_SUBJECT", "mailto:noreply@vonk.social"),
+            cluster_enabled: env_or("CLUSTER_ENABLED", "false").parse().unwrap_or(false),
+            cluster_node_id: std::env::var("CLUSTER_NODE_ID").ok().filter(|s| !s.is_empty()),
+            cluster_secret: env_or("CLUSTER_SECRET", ""),
         })
     }
 
