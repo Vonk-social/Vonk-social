@@ -1,5 +1,7 @@
 // Vonk API routes
+pub mod admin;
 pub mod auth;
+pub mod cluster;
 pub mod feed;
 pub mod follows;
 pub mod invites;
