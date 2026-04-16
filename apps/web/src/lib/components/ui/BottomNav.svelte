@@ -12,8 +12,8 @@
 	import Avatar from './Avatar.svelte';
 	import type { SessionUser } from '$lib/api/core';
 
-	type Props = { user: SessionUser };
-	let { user }: Props = $props();
+	type Props = { user: SessionUser; unreadCount?: number };
+	let { user, unreadCount = 0 }: Props = $props();
 
 	const path = $derived($page.url.pathname);
 	const profilePath = $derived(`/u/${user.username}`);
@@ -96,30 +96,37 @@
 			</a>
 		</li>
 
-		<!-- DM / Snaps -->
+		<!-- DM / Berichten -->
 		<li class="flex-1">
 			<a
 				href="/dm"
-				aria-label="Snaps"
+				aria-label="Berichten"
 				aria-current={dmActive ? 'page' : undefined}
 				class="flex flex-col items-center gap-0.5 rounded-lg py-2 text-xs font-medium transition-colors"
 				class:text-terracotta={dmActive}
 				class:text-muted={!dmActive}
 			>
-				<svg
-					viewBox="0 0 24 24"
-					class="h-6 w-6"
-					fill={dmActive ? 'currentColor' : 'none'}
-					stroke="currentColor"
-					stroke-width="2"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M21 12c0 4.5-4 8-9 8a9.7 9.7 0 01-3.8-.75L3 21l1.25-4.5A8 8 0 013 12c0-4.4 4-8 9-8s9 3.6 9 8z"
-					/>
-				</svg>
-				<span>Snaps</span>
+				<span class="relative inline-block">
+					<svg
+						viewBox="0 0 24 24"
+						class="h-6 w-6"
+						fill={dmActive ? 'currentColor' : 'none'}
+						stroke="currentColor"
+						stroke-width="2"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M21 12c0 4.5-4 8-9 8a9.7 9.7 0 01-3.8-.75L3 21l1.25-4.5A8 8 0 013 12c0-4.4 4-8 9-8s9 3.6 9 8z"
+						/>
+					</svg>
+					{#if unreadCount > 0}
+						<span
+							class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-terracotta px-1 text-[10px] font-bold text-white"
+						>{unreadCount > 99 ? '99+' : unreadCount}</span>
+					{/if}
+				</span>
+				<span>Berichten</span>
 			</a>
 		</li>
 

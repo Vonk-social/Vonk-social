@@ -28,5 +28,5 @@
 </div>
 
 {#if showBottomNav && data.user}
-	<BottomNav user={data.user} />
+	<BottomNav user={data.user} unreadCount={data.unreadCount} />
 {/if}
