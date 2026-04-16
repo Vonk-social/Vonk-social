@@ -32,10 +32,8 @@
 	);
 
 	$effect(() => {
-		if (form && 'ok' in form && form.ok && 'sent' in form && form.sent) {
-			toasts.push('success', 'Uitnodiging verstuurd');
-		} else if (form && 'ok' in form && form.ok && 'message' in form && form.message === 'queued') {
-			toasts.push('info', 'In de wachtrij — SMTP is nog niet geconfigureerd.');
+		if (form && 'ok' in form && form.ok) {
+			toasts.push('success', 'Uitnodiging wordt verstuurd!');
 		} else if (form && 'error' in form && form.error) {
 			toasts.push('error', String(form.error));
 		}
