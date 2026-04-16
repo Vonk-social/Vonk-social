@@ -1,14 +1,11 @@
 //! SMTP sender. Uses Postal (post.wattify.be) for outbound mail.
-//!
-//! Kept deliberately small: construct a transport per send. Connection
-//! pooling via `AsyncSmtpTransport::pool_config` is a later optimization;
-//! invites are low-volume and this keeps the error paths explicit.
 
 use std::time::Duration;
 
 use anyhow::{anyhow, Context, Result};
 use lettre::message::{header::ContentType, Mailbox, Message};
 use lettre::transport::smtp::authentication::Credentials;
+use lettre::transport::smtp::client::{Tls, TlsParametersBuilder};
 use lettre::{AsyncSmtpTransport, AsyncTransport, Tokio1Executor};
 
 use crate::config::AppConfig;
@@ -49,30 +46,27 @@ pub async fn send(cfg: &AppConfig, out: Outgoing) -> Result<()> {
 
     let creds = Credentials::new(cfg.smtp_user.clone(), cfg.smtp_pass.clone());
 
-    // Postal accepts STARTTLS on 587 and plain/STARTTLS-opportunistic on 25.
-    // Some hosting providers block outbound 587, so we adapt based on port.
+    // Accept invalid/expired certs — Postal's TLS cert on post.wattify.be
+    // is expired since July 2025. TODO: remove once the cert is renewed.
+    let tls = TlsParametersBuilder::new(cfg.smtp_host.clone())
+        .dangerous_accept_invalid_certs(true)
+        .build_rustls()
+        .context("build TLS params")?;
+
     let transport: AsyncSmtpTransport<Tokio1Executor> = if cfg.smtp_port == 465 {
-        // Implicit TLS (SMTPS)
         AsyncSmtpTransport::<Tokio1Executor>::relay(&cfg.smtp_host)
-            .context("build TLS relay")?
+            .context("build relay")?
             .port(cfg.smtp_port)
             .credentials(creds)
-            .timeout(Some(Duration::from_secs(15)))
-            .build()
-    } else if cfg.smtp_port == 25 {
-        // Port 25: try STARTTLS opportunistically, fall back to plain.
-        AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&cfg.smtp_host)
-            .context("build STARTTLS relay")?
-            .port(cfg.smtp_port)
-            .credentials(creds)
+            .tls(Tls::Wrapper(tls))
             .timeout(Some(Duration::from_secs(15)))
             .build()
     } else {
-        // Port 587 (default): require STARTTLS
-        AsyncSmtpTransport::<Tokio1Executor>::starttls_relay(&cfg.smtp_host)
-            .context("build STARTTLS relay")?
+        // Port 25 or 587: opportunistic STARTTLS with lenient cert check
+        AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(&cfg.smtp_host)
             .port(cfg.smtp_port)
             .credentials(creds)
+            .tls(Tls::Opportunistic(tls))
             .timeout(Some(Duration::from_secs(15)))
             .build()
     };
