@@ -31,6 +31,14 @@ pub struct User {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub onboarding_completed_at: Option<DateTime<Utc>>,
+    pub public_key: Option<String>,
+    pub handle_instagram: Option<String>,
+    pub handle_twitter: Option<String>,
+    pub handle_snapchat: Option<String>,
+    pub handle_telegram: Option<String>,
+    pub handle_bluesky: Option<String>,
+    pub handle_mastodon: Option<String>,
+    pub handle_website: Option<String>,
 }
 
 impl User {
@@ -45,7 +53,9 @@ impl User {
     pub const COLUMNS: &'static str = "id, uuid, username, display_name, email, email_verified, \
                                        bio, avatar_url, banner_url, location_city, location_country, \
                                        locale, is_private, is_suspended, created_at, updated_at, \
-                                       onboarding_completed_at";
+                                       onboarding_completed_at, public_key, handle_instagram, \
+                                       handle_twitter, handle_snapchat, handle_telegram, \
+                                       handle_bluesky, handle_mastodon, handle_website";
 }
 
 /// Private profile (what the user sees for themselves — includes email).
@@ -65,6 +75,14 @@ pub struct MeProfile {
     pub is_private: bool,
     pub needs_onboarding: bool,
     pub created_at: DateTime<Utc>,
+    pub handle_instagram: Option<String>,
+    pub handle_twitter: Option<String>,
+    pub handle_snapchat: Option<String>,
+    pub handle_telegram: Option<String>,
+    pub handle_bluesky: Option<String>,
+    pub handle_mastodon: Option<String>,
+    pub handle_website: Option<String>,
+    pub public_key: Option<String>,
 }
 
 impl From<&User> for MeProfile {
@@ -84,6 +102,14 @@ impl From<&User> for MeProfile {
             is_private: u.is_private.unwrap_or(false),
             needs_onboarding: u.needs_onboarding(),
             created_at: u.created_at,
+            handle_instagram: u.handle_instagram.clone(),
+            handle_twitter: u.handle_twitter.clone(),
+            handle_snapchat: u.handle_snapchat.clone(),
+            handle_telegram: u.handle_telegram.clone(),
+            handle_bluesky: u.handle_bluesky.clone(),
+            handle_mastodon: u.handle_mastodon.clone(),
+            handle_website: u.handle_website.clone(),
+            public_key: u.public_key.clone(),
         }
     }
 }
@@ -101,6 +127,16 @@ pub struct PublicProfile {
     pub location_city: Option<String>,
     pub location_country: Option<String>,
     pub created_at: DateTime<Utc>,
+    pub handle_instagram: Option<String>,
+    pub handle_twitter: Option<String>,
+    pub handle_snapchat: Option<String>,
+    pub handle_telegram: Option<String>,
+    pub handle_bluesky: Option<String>,
+    pub handle_mastodon: Option<String>,
+    pub handle_website: Option<String>,
+    /// X25519 public key (base64url). Exposed on public profiles so
+    /// senders can encrypt snaps to this user client-side.
+    pub public_key: Option<String>,
 }
 
 impl From<&User> for PublicProfile {
@@ -115,6 +151,14 @@ impl From<&User> for PublicProfile {
             location_city: u.location_city.clone(),
             location_country: u.location_country.clone(),
             created_at: u.created_at,
+            handle_instagram: u.handle_instagram.clone(),
+            handle_twitter: u.handle_twitter.clone(),
+            handle_snapchat: u.handle_snapchat.clone(),
+            handle_telegram: u.handle_telegram.clone(),
+            handle_bluesky: u.handle_bluesky.clone(),
+            handle_mastodon: u.handle_mastodon.clone(),
+            handle_website: u.handle_website.clone(),
+            public_key: u.public_key.clone(),
         }
     }
 }

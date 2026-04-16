@@ -38,6 +38,10 @@ struct HealthResponse {
     status: &'static str,
     version: &'static str,
     google_oauth_configured: bool,
+    github_oauth_configured: bool,
+    apple_oauth_configured: bool,
+    smtp_configured: bool,
+    vapid_configured: bool,
 }
 
 async fn health(
@@ -47,6 +51,10 @@ async fn health(
         status: "ok",
         version: env!("CARGO_PKG_VERSION"),
         google_oauth_configured: state.config.google_configured(),
+        github_oauth_configured: state.config.github_configured(),
+        apple_oauth_configured: state.config.apple_configured(),
+        smtp_configured: state.config.smtp_configured(),
+        vapid_configured: state.config.vapid_configured(),
     })
 }
 

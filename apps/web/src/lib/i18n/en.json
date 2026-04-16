@@ -33,7 +33,9 @@
 	"login.title": "Welcome to Vonk",
 	"login.subtitle": "Sign in with an account you already have. No passwords to remember, no spam.",
 	"login.google": "Sign in with Google",
-	"login.more_providers": "Apple and GitHub are coming.",
+	"login.github": "Sign in with GitHub",
+	"login.apple": "Sign in with Apple",
+	"login.more_providers": "More providers go live as soon as their keys are registered.",
 
 	"onboarding.title": "Let's set up your profile",
 	"onboarding.step_username": "Pick a username",
