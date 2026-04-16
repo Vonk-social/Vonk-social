@@ -438,8 +438,10 @@ async fn upload_avatar(
             .map_err(|e| ApiError::Upstream(anyhow::anyhow!("s3 put {key}: {e}")))?;
     }
 
-    // Medium variant is what we put on the profile.
-    let avatar_url = format!("/media/avatars/{}/medium.webp", user.uuid);
+    // Medium variant is what we put on the profile. Add a timestamp
+    // query param as cache-buster so browsers don't serve the old one.
+    let ts = chrono::Utc::now().timestamp();
+    let avatar_url = format!("/media/avatars/{}/medium.webp?v={ts}", user.uuid);
 
     sqlx::query("UPDATE users SET avatar_url = $1, updated_at = now() WHERE id = $2")
         .bind(&avatar_url)
