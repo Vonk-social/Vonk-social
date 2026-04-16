@@ -134,7 +134,9 @@ impl AppConfig {
             apple_client_id: std::env::var("APPLE_CLIENT_ID").unwrap_or_default(),
             apple_team_id: std::env::var("APPLE_TEAM_ID").unwrap_or_default(),
             apple_key_id: std::env::var("APPLE_KEY_ID").unwrap_or_default(),
-            apple_private_key: std::env::var("APPLE_PRIVATE_KEY").unwrap_or_default(),
+            apple_private_key: std::env::var("APPLE_PRIVATE_KEY")
+                .unwrap_or_default()
+                .replace("\\n", "\n"), // .env stores PEM with escaped newlines
             github_client_id: std::env::var("GITHUB_CLIENT_ID").unwrap_or_default(),
             github_client_secret: std::env::var("GITHUB_CLIENT_SECRET").unwrap_or_default(),
             google_client_id: std::env::var("GOOGLE_CLIENT_ID").unwrap_or_default(),

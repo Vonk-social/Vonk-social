@@ -33,6 +33,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/auth/login/github", get(login_github))
         .route("/api/auth/callback/github", get(callback_github))
         .route("/api/auth/login/apple", get(login_apple))
+        .route("/api/auth/callback/apple", post(callback_apple))
         .route("/api/auth/refresh", post(refresh))
         .route("/api/auth/logout", post(logout))
 }
@@ -526,6 +527,220 @@ async fn login_apple(
 
     let url = oauth_apple::build_authorize_url(&state.config, origin.as_deref(), &csrf);
     Ok(Redirect::to(&url))
+}
+
+// ── /callback/apple ──────────────────────────────────────────
+//
+// Apple uses `response_mode=form_post` — the callback is a POST with
+// form-encoded body, not a GET with query params. The body contains:
+//   code, state, id_token (always), user (JSON, only on first consent)
+
+#[derive(Debug, Deserialize)]
+pub struct AppleCallbackForm {
+    code: Option<String>,
+    state: Option<String>,
+    #[allow(dead_code)]
+    id_token: Option<String>,
+    /// JSON string with { name: { firstName, lastName } } — only on first consent.
+    user: Option<String>,
+    error: Option<String>,
+}
+
+async fn callback_apple(
+    State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    jar: CookieJar,
+    axum::extract::Form(form): axum::extract::Form<AppleCallbackForm>,
+) -> ApiResult<Response> {
+    if let Some(err) = form.error {
+        return Err(ApiError::bad_request(
+            "apple_oauth_error",
+            format!("Apple returned error: {err}"),
+        ));
+    }
+    let code = form
+        .code
+        .ok_or_else(|| ApiError::bad_request("missing_code", "Missing code"))?;
+    let csrf = form
+        .state
+        .ok_or_else(|| ApiError::bad_request("missing_state", "Missing state"))?;
+
+    // Recover the stored origin.
+    let mut conn = state.redis.clone();
+    let stored_origin: Option<String> = redis::cmd("GETDEL")
+        .arg(format!("oauth:apple:state:{csrf}"))
+        .query_async(&mut conn)
+        .await?;
+    let stored_origin = stored_origin.ok_or_else(|| {
+        ApiError::bad_request("invalid_state", "OAuth state expired or unknown")
+    })?;
+    let stored_origin = if stored_origin.is_empty() {
+        None
+    } else {
+        Some(stored_origin)
+    };
+
+    // Exchange code for tokens (mints ES256 client_secret on the fly).
+    let tokens = oauth_apple::exchange_code(
+        &state.http,
+        &state.config,
+        stored_origin.as_deref(),
+        &code,
+    )
+    .await
+    .map_err(ApiError::Upstream)?;
+
+    // Decode the id_token to get sub + email.
+    let claims = oauth_apple::decode_id_token(&tokens.id_token)
+        .map_err(|e| ApiError::Upstream(anyhow::anyhow!("id_token: {e}")))?;
+
+    // Parse user info (name) — only present on first consent.
+    let user_info: Option<oauth_apple::AppleUserInfo> = form
+        .user
+        .as_deref()
+        .and_then(|u| serde_json::from_str(u).ok());
+
+    let display_name = user_info
+        .as_ref()
+        .and_then(|u| u.display_name());
+
+    let (user, _is_new) =
+        upsert_apple_user(&state, &claims, display_name.as_deref()).await?;
+
+    // Create session.
+    let device_name = headers
+        .get(axum::http::header::USER_AGENT)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| truncate(s, 120).to_string());
+    let ip_hash = hash_client_ip(&headers, &addr, &state.config.ip_hash_salt);
+    let expires_at = Utc::now()
+        + ChronoDuration::from_std(state.config.refresh_ttl)
+            .unwrap_or(ChronoDuration::days(30));
+
+    let session_id = Uuid::new_v4();
+    sqlx::query(
+        "INSERT INTO sessions (id, user_id, device_name, ip_hash, expires_at) \
+         VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(session_id)
+    .bind(user.id)
+    .bind(device_name)
+    .bind(ip_hash)
+    .bind(expires_at)
+    .execute(&state.db)
+    .await?;
+
+    let access = jwt::mint(&user, session_id, &state.config)
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!("failed to mint JWT: {e}")))?;
+
+    let jar = jar
+        .add(cookies::access(access, &state.config))
+        .add(cookies::refresh(session_id.to_string(), &state.config));
+
+    let dest_base = stored_origin
+        .as_deref()
+        .map(|s| s.trim_end_matches('/').to_string())
+        .unwrap_or_else(|| state.config.web_url.trim_end_matches('/').to_string());
+    let dest = if user.needs_onboarding() {
+        format!("{dest_base}/onboarding/username")
+    } else {
+        format!("{dest_base}/home")
+    };
+
+    Ok((jar, Redirect::to(&dest)).into_response())
+}
+
+/// Find or create a user for this Apple identity.
+async fn upsert_apple_user(
+    state: &AppState,
+    claims: &oauth_apple::AppleIdTokenClaims,
+    display_name: Option<&str>,
+) -> ApiResult<(User, bool)> {
+    let provider_uid = &claims.sub;
+
+    // 1. Provider lookup.
+    let existing = sqlx::query_as::<_, User>(&format!(
+        "SELECT {cols} FROM users u \
+           JOIN user_auth_providers p ON p.user_id = u.id \
+          WHERE p.provider = 'apple' AND p.provider_uid = $1",
+        cols = prefixed("u", User::COLUMNS),
+    ))
+    .bind(provider_uid)
+    .fetch_optional(&state.db)
+    .await?;
+
+    if let Some(u) = existing {
+        return Ok((u, false));
+    }
+
+    // 2. Email lookup — Apple emails are verified when email_verified claim is true.
+    if claims.is_email_verified() {
+        if let Some(email) = claims.email.as_deref() {
+            let by_email = sqlx::query_as::<_, User>(&format!(
+                "SELECT {cols} FROM users WHERE email = $1 AND deleted_at IS NULL",
+                cols = User::COLUMNS,
+            ))
+            .bind(email)
+            .fetch_optional(&state.db)
+            .await?;
+            if let Some(u) = by_email {
+                sqlx::query(
+                    "INSERT INTO user_auth_providers \
+                        (user_id, provider, provider_uid, provider_email, provider_name) \
+                     VALUES ($1, 'apple', $2, $3, $4) \
+                     ON CONFLICT (provider, provider_uid) DO NOTHING",
+                )
+                .bind(u.id)
+                .bind(provider_uid)
+                .bind(&claims.email)
+                .bind(display_name)
+                .execute(&state.db)
+                .await?;
+                return Ok((u, false));
+            }
+        }
+    }
+
+    // 3. New user.
+    let user_uuid = Uuid::new_v4();
+    let auto_username = format!("user_{}", &user_uuid.as_simple().to_string()[..8]);
+    let name = display_name
+        .unwrap_or("Nieuwe Vonk")
+        .to_string();
+    let locale = "nl";
+
+    let mut tx = state.db.begin().await?;
+    let new_user = sqlx::query_as::<_, User>(&format!(
+        "INSERT INTO users (uuid, username, display_name, email, email_verified, locale) \
+         VALUES ($1, $2, $3, $4, $5, $6) \
+         RETURNING {cols}",
+        cols = User::COLUMNS,
+    ))
+    .bind(user_uuid)
+    .bind(&auto_username)
+    .bind(&name)
+    .bind(claims.email.as_deref())
+    .bind(claims.is_email_verified())
+    .bind(locale)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO user_auth_providers \
+            (user_id, provider, provider_uid, provider_email, provider_name) \
+         VALUES ($1, 'apple', $2, $3, $4)",
+    )
+    .bind(new_user.id)
+    .bind(provider_uid)
+    .bind(&claims.email)
+    .bind(display_name)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok((new_user, true))
 }
 
 // ── /refresh ─────────────────────────────────────────────────
