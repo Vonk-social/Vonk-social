@@ -38,6 +38,8 @@ pub struct AppConfig {
     pub jwt_secret: String,
     pub jwt_access_ttl: Duration,
     pub refresh_ttl: Duration,
+    pub github_client_id: String,
+    pub github_client_secret: String,
     pub google_client_id: String,
     pub google_client_secret: String,
 
@@ -98,6 +100,8 @@ impl AppConfig {
             jwt_secret,
             jwt_access_ttl: Duration::from_secs(env_parsed("JWT_ACCESS_TTL_SECS", 15 * 60)?),
             refresh_ttl: Duration::from_secs(env_parsed("REFRESH_TTL_SECS", 30 * 24 * 60 * 60)?),
+            github_client_id: std::env::var("GITHUB_CLIENT_ID").unwrap_or_default(),
+            github_client_secret: std::env::var("GITHUB_CLIENT_SECRET").unwrap_or_default(),
             google_client_id: std::env::var("GOOGLE_CLIENT_ID").unwrap_or_default(),
             google_client_secret: std::env::var("GOOGLE_CLIENT_SECRET").unwrap_or_default(),
             s3_endpoint: env_or("S3_ENDPOINT", "http://localhost:9000"),
@@ -129,6 +133,11 @@ impl AppConfig {
     /// True when Google OAuth credentials are configured.
     pub fn google_configured(&self) -> bool {
         !self.google_client_id.is_empty() && !self.google_client_secret.is_empty()
+    }
+
+    /// True when GitHub OAuth credentials are configured.
+    pub fn github_configured(&self) -> bool {
+        !self.github_client_id.is_empty() && !self.github_client_secret.is_empty()
     }
 }
 

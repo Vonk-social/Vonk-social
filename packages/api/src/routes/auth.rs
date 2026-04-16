@@ -20,7 +20,7 @@ use redis::AsyncCommands;
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::auth::{cookies, jwt, oauth_google};
+use crate::auth::{cookies, jwt, oauth_github, oauth_google};
 use crate::error::{ApiError, ApiResult};
 use crate::models::User;
 use crate::state::AppState;
@@ -30,6 +30,8 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/api/auth/login/google", get(login_google))
         .route("/api/auth/callback/google", get(callback_google))
+        .route("/api/auth/login/github", get(login_github))
+        .route("/api/auth/callback/github", get(callback_github))
         .route("/api/auth/refresh", post(refresh))
         .route("/api/auth/logout", post(logout))
 }
@@ -283,6 +285,218 @@ async fn upsert_google_user(
     Ok((new_user, true))
 }
 
+// ── /login/github ────────────────────────────────────────────
+
+async fn login_github(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> ApiResult<Redirect> {
+    if !state.config.github_configured() {
+        return Err(ApiError::bad_request(
+            "github_not_configured",
+            "GitHub OAuth credentials are not configured on the server",
+        ));
+    }
+
+    let csrf = oauth_github::random_state();
+    let pkce = oauth_github::PkcePair::new_sha256();
+
+    let origin = origin_from_headers(&headers);
+    let mut conn = state.redis.clone();
+    let key = redis_key_github(&csrf);
+    let payload = format!("{}\n{}", pkce.verifier, origin.as_deref().unwrap_or(""));
+    let _: () = conn.set_ex(&key, &payload, 600).await?;
+
+    let url =
+        oauth_github::build_authorize_url(&state.config, origin.as_deref(), &csrf, &pkce.challenge);
+    Ok(Redirect::to(&url))
+}
+
+// ── /callback/github ─────────────────────────────────────────
+
+async fn callback_github(
+    State(state): State<AppState>,
+    Query(q): Query<CallbackQuery>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    jar: CookieJar,
+) -> ApiResult<Response> {
+    if let Some(err) = q.error {
+        return Err(ApiError::bad_request(
+            "github_oauth_error",
+            format!("GitHub returned error: {err}"),
+        ));
+    }
+    let code = q
+        .code
+        .ok_or_else(|| ApiError::bad_request("missing_code", "Missing ?code"))?;
+    let csrf = q
+        .state
+        .ok_or_else(|| ApiError::bad_request("missing_state", "Missing ?state"))?;
+
+    let mut conn = state.redis.clone();
+    let stored: Option<String> = redis::cmd("GETDEL")
+        .arg(redis_key_github(&csrf))
+        .query_async(&mut conn)
+        .await?;
+    let stored = stored.ok_or_else(|| {
+        ApiError::bad_request("invalid_state", "OAuth state expired or unknown")
+    })?;
+    let (verifier, stored_origin) = match stored.split_once('\n') {
+        Some((v, o)) if !o.is_empty() => (v.to_string(), Some(o.to_string())),
+        Some((v, _)) => (v.to_string(), None),
+        None => (stored, None),
+    };
+
+    let tokens = oauth_github::exchange_code(
+        &state.http,
+        &state.config,
+        stored_origin.as_deref(),
+        &code,
+        &verifier,
+    )
+    .await
+    .map_err(ApiError::Upstream)?;
+
+    let gh_user = oauth_github::fetch_user(&state.http, &tokens.access_token)
+        .await
+        .map_err(ApiError::Upstream)?;
+
+    let (user, _is_new) = upsert_github_user(&state, &gh_user).await?;
+
+    let device_name = headers
+        .get(axum::http::header::USER_AGENT)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| truncate(s, 120).to_string());
+    let ip_hash = hash_client_ip(&headers, &addr, &state.config.ip_hash_salt);
+    let expires_at = Utc::now()
+        + ChronoDuration::from_std(state.config.refresh_ttl)
+            .unwrap_or(ChronoDuration::days(30));
+
+    let session_id = Uuid::new_v4();
+    sqlx::query(
+        "INSERT INTO sessions (id, user_id, device_name, ip_hash, expires_at) \
+         VALUES ($1, $2, $3, $4, $5)",
+    )
+    .bind(session_id)
+    .bind(user.id)
+    .bind(device_name)
+    .bind(ip_hash)
+    .bind(expires_at)
+    .execute(&state.db)
+    .await?;
+
+    let access = jwt::mint(&user, session_id, &state.config)
+        .map_err(|e| ApiError::Internal(anyhow::anyhow!("failed to mint JWT: {e}")))?;
+
+    let jar = jar
+        .add(cookies::access(access, &state.config))
+        .add(cookies::refresh(session_id.to_string(), &state.config));
+
+    let dest_base = stored_origin
+        .as_deref()
+        .map(|s| s.trim_end_matches('/').to_string())
+        .unwrap_or_else(|| state.config.web_url.trim_end_matches('/').to_string());
+    let dest = if user.needs_onboarding() {
+        format!("{dest_base}/onboarding/username")
+    } else {
+        format!("{dest_base}/home")
+    };
+
+    Ok((jar, Redirect::to(&dest)).into_response())
+}
+
+/// Find or create a user for this GitHub identity.
+async fn upsert_github_user(
+    state: &AppState,
+    info: &oauth_github::GitHubUser,
+) -> ApiResult<(User, bool)> {
+    let provider_uid = info.id.to_string();
+
+    // 1. Provider lookup.
+    let existing = sqlx::query_as::<_, User>(&format!(
+        "SELECT {cols} FROM users u \
+           JOIN user_auth_providers p ON p.user_id = u.id \
+          WHERE p.provider = 'github' AND p.provider_uid = $1",
+        cols = prefixed("u", User::COLUMNS),
+    ))
+    .bind(&provider_uid)
+    .fetch_optional(&state.db)
+    .await?;
+
+    if let Some(u) = existing {
+        return Ok((u, false));
+    }
+
+    // 2. Email lookup — GitHub emails on `/user/emails` are already marked
+    //    verified+primary by the fetch_user helper.
+    if let Some(email) = info.email.as_deref() {
+        let by_email = sqlx::query_as::<_, User>(&format!(
+            "SELECT {cols} FROM users WHERE email = $1 AND deleted_at IS NULL",
+            cols = User::COLUMNS,
+        ))
+        .bind(email)
+        .fetch_optional(&state.db)
+        .await?;
+        if let Some(u) = by_email {
+            sqlx::query(
+                "INSERT INTO user_auth_providers \
+                    (user_id, provider, provider_uid, provider_email, provider_name) \
+                 VALUES ($1, 'github', $2, $3, $4) \
+                 ON CONFLICT (provider, provider_uid) DO NOTHING",
+            )
+            .bind(u.id)
+            .bind(&provider_uid)
+            .bind(&info.email)
+            .bind(&info.name)
+            .execute(&state.db)
+            .await?;
+            return Ok((u, false));
+        }
+    }
+
+    // 3. New user.
+    let user_uuid = Uuid::new_v4();
+    let auto_username = format!("user_{}", &user_uuid.as_simple().to_string()[..8]);
+    let display_name = info
+        .name
+        .clone()
+        .unwrap_or_else(|| info.login.clone());
+    let locale = "nl";
+
+    let mut tx = state.db.begin().await?;
+    let new_user = sqlx::query_as::<_, User>(&format!(
+        "INSERT INTO users (uuid, username, display_name, email, email_verified, locale) \
+         VALUES ($1, $2, $3, $4, $5, $6) \
+         RETURNING {cols}",
+        cols = User::COLUMNS,
+    ))
+    .bind(user_uuid)
+    .bind(&auto_username)
+    .bind(&display_name)
+    .bind(info.email.as_deref())
+    .bind(info.email.is_some())
+    .bind(locale)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        "INSERT INTO user_auth_providers \
+            (user_id, provider, provider_uid, provider_email, provider_name) \
+         VALUES ($1, 'github', $2, $3, $4)",
+    )
+    .bind(new_user.id)
+    .bind(&provider_uid)
+    .bind(&info.email)
+    .bind(&info.name)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok((new_user, true))
+}
+
 // ── /refresh ─────────────────────────────────────────────────
 
 async fn refresh(
@@ -416,6 +630,10 @@ async fn logout(
 
 fn redis_key(state: &str) -> String {
     format!("oauth:google:state:{state}")
+}
+
+fn redis_key_github(state: &str) -> String {
+    format!("oauth:github:state:{state}")
 }
 
 fn hash_client_ip(headers: &HeaderMap, fallback: &SocketAddr, salt: &str) -> String {
