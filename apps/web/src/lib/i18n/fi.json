@@ -20,6 +20,10 @@
 	"landing.pillar4.title": "Sinun tahtisi, sinun syötteesi",
 	"landing.pillar4.body": "Kronologinen aikajana. Ei sitouttamisalgoritmia, ei dopamiinisilmukoita, ei «sinulle ehdotettua». Tykkäykset? Vain kirjoittaja näkee, kuinka moni piti julkaisusta — sinä päätät, vaikuttaako se mielialaasi.",
 
+	"landing.distributed.title": "Hajautettu, ei keskitetty",
+	"landing.distributed.body": "Vonk ei pyöri yhdellä palvelimella. Tietosi salataan ja jaetaan useille solmuille — kuten RAID kiintolevyille. Jos yksi kaatuu, muut jatkavat. Kuka tahansa voi ylläpitää solmua ja tukea verkkoa. Yksityisviestit ovat päästä päähän -salattuja: edes ylläpitäjä ei voi lukea niitä.",
+	"landing.distributed.cta": "Ryhdy Vonk-isännäksi",
+
 	"landing.finances.title": "Kaikki läpinäkyvää",
 	"landing.finances.body": "Jokainen Vonkin saama ja kuluttama euro näytetään julkisesti. Lahjoitukset, laskut, hostingkulut, tilisiirrot hyväntekeväisyyteen — kaikki luettavissa reaaliaikaisesti, kenen tahansa. Pian osoitteessa /open.",
 
@@ -28,5 +32,48 @@
 
 	"landing.footer.license": "Vonk — AGPL-3.0",
 	"landing.footer.source": "Koodi ja issuet GitHubissa",
-	"landing.footer.europe": "Tehty Euroopassa 🇪🇺"
+	"landing.footer.europe": "Tehty Euroopassa 🇪🇺",
+
+	"login.title": "Tervetuloa Vonkiin",
+	"login.subtitle": "Kirjaudu olemassa olevalla tilillä. Ei salasanoja muistettavaksi, ei roskapostia.",
+	"login.google": "Kirjaudu Googlella",
+	"login.github": "Kirjaudu GitHubilla",
+	"login.apple": "Kirjaudu Applella",
+	"login.more_providers": "Lisää palveluntarjoajia tulee saataville, kun niiden avaimet on rekisteröity.",
+
+	"onboarding.title": "Laitetaan profiilisi kuntoon",
+	"onboarding.step_username": "Valitse käyttäjänimi",
+	"onboarding.step_avatar": "Kuva?",
+	"onboarding.step_friends": "Etsi ystäväsi",
+	"onboarding.step_of": "Vaihe {current}/{total}",
+
+	"username.label": "Käyttäjänimi",
+	"username.help": "3–30 merkkiä — kirjaimet, numerot, alaviiva.",
+	"username.available": "Vapaa ✓",
+	"username.taken": "Jo varattu",
+	"username.invalid": "Vain a–z, 0–9 ja _ (alaviiva) sallittu",
+	"username.reserved": "Tämä etuliite on varattu",
+	"username.continue": "Seuraava — valitse kuva",
+
+	"avatar.title": "Näytä itsesi",
+	"avatar.help": "Kuva kasvoistasi tai mistä tahansa. Poistamme EXIF-tiedot (kuten GPS-koordinaatit) ennen tallennusta.",
+	"avatar.choose": "Valitse kuva",
+	"avatar.change": "Valitse toinen kuva",
+	"avatar.uploading": "Lähetetään…",
+	"avatar.skip": "Ohita",
+	"avatar.continue": "Seuraava — etsi ystäviä",
+
+	"friends.title": "Kutsu ystäväsi!",
+	"friends.help": "Vonk on hauskempaa tuttujen kanssa. Kutsu heitä sähköpostilla, etsi heitä käyttäjänimellä muilta alustoilta tai löydä uusia Vonk-käyttäjiä.",
+	"friends.invite": "Kutsu ystäviä",
+	"friends.discover": "Löydä ihmisiä",
+	"friends.done": "Myöhemmin",
+
+	"home.welcome": "Tervetuloa, {name}!",
+	"home.empty": "Syötteesi on vielä tyhjä. Vaihe 2 on tulossa: julkaisut, seuraaminen, stories.",
+	"home.logout": "Kirjaudu ulos",
+
+	"error.generic": "Jokin meni pieleen. Yritä uudelleen.",
+	"error.unauthenticated": "Istuntosi on vanhentunut. Kirjaudu uudelleen.",
+	"error.google_not_configured": "Google-kirjautumista ei ole vielä määritetty palvelimella."
 }

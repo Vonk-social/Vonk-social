@@ -20,6 +20,10 @@
 	"landing.pillar4.title": "Dit tempo, dit feed",
 	"landing.pillar4.body": "Kronologisk tidslinje. Ingen engagementsalgoritme, ingen dopaminsløjfer, ingen «foreslået til dig». Likes? Kun forfatteren ser, hvor mange der kunne lide et opslag — du bestemmer selv, om det skal påvirke dit humør.",
 
+	"landing.distributed.title": "Distribueret, ikke centraliseret",
+	"landing.distributed.body": "Vonk kører ikke på en enkelt server. Dine data krypteres og spredes over flere noder — som RAID for harddiske. Hvis en fejler, fortsætter resten. Alle kan hoste en node og bidrage til netværket. Direkte beskeder er end-to-end-krypterede: selv hosten kan ikke læse dem.",
+	"landing.distributed.cta": "Bliv Vonk-vært",
+
 	"landing.finances.title": "Alt transparent",
 	"landing.finances.body": "Hver euro Vonk modtager og bruger vises offentligt. Donationer, fakturaer, hostingomkostninger, overførsler til velgørenhed — alt læsbart live, af alle. Snart på /open.",
 
@@ -28,5 +32,48 @@
 
 	"landing.footer.license": "Vonk — AGPL-3.0",
 	"landing.footer.source": "Kode & issues på GitHub",
-	"landing.footer.europe": "Lavet i Europa 🇪🇺"
+	"landing.footer.europe": "Lavet i Europa 🇪🇺",
+
+	"login.title": "Velkommen til Vonk",
+	"login.subtitle": "Log ind med en konto, du allerede har. Ingen adgangskoder at huske, ingen spam.",
+	"login.google": "Log ind med Google",
+	"login.github": "Log ind med GitHub",
+	"login.apple": "Log ind med Apple",
+	"login.more_providers": "Flere udbydere bliver tilgængelige, så snart deres nøgler er registreret.",
+
+	"onboarding.title": "Lad os sætte din profil op",
+	"onboarding.step_username": "Vælg et brugernavn",
+	"onboarding.step_avatar": "Et foto?",
+	"onboarding.step_friends": "Find dine venner",
+	"onboarding.step_of": "Trin {current} af {total}",
+
+	"username.label": "Brugernavn",
+	"username.help": "3–30 tegn — bogstaver, tal, understregning.",
+	"username.available": "Ledigt ✓",
+	"username.taken": "Allerede taget",
+	"username.invalid": "Kun a–z, 0–9 og _ (understregning) tilladt",
+	"username.reserved": "Dette præfiks er reserveret",
+	"username.continue": "Næste — vælg foto",
+
+	"avatar.title": "Vis dig selv",
+	"avatar.help": "Et foto af dit ansigt, eller hvad som helst. Vi fjerner EXIF-data (som GPS-koordinater) før vi gemmer det.",
+	"avatar.choose": "Vælg foto",
+	"avatar.change": "Vælg et andet foto",
+	"avatar.uploading": "Uploader…",
+	"avatar.skip": "Spring over",
+	"avatar.continue": "Næste — find venner",
+
+	"friends.title": "Inviter dine venner!",
+	"friends.help": "Vonk er sjovere med folk, du kender. Inviter dem via e-mail, find dem via deres brugernavn på andre platforme, eller opdag nye Vonk-brugere.",
+	"friends.invite": "Inviter venner",
+	"friends.discover": "Opdag folk",
+	"friends.done": "Gør det senere",
+
+	"home.welcome": "Velkommen, {name}!",
+	"home.empty": "Dit feed er tomt for nu. Fase 2 er på vej: opslag, følge, stories.",
+	"home.logout": "Log ud",
+
+	"error.generic": "Noget gik galt. Prøv igen.",
+	"error.unauthenticated": "Din session er udløbet. Log ind igen.",
+	"error.google_not_configured": "Google-login er endnu ikke konfigureret på serveren."
 }

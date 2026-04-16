@@ -20,6 +20,10 @@
 	"landing.pillar4.title": "Ritmul tău, feed-ul tău",
 	"landing.pillar4.body": "Cronologie reală. Fără algoritm de engagement, fără bucle de dopamină, fără «sugerate pentru tine». Like-urile? Doar autorul vede câte persoane au apreciat o postare — tu decizi dacă asta îți afectează starea.",
 
+	"landing.distributed.title": "Distribuit, nu centralizat",
+	"landing.distributed.body": "Vonk nu rulează pe un singur server. Datele tale sunt criptate și distribuite pe mai multe noduri — ca un RAID pentru hard disk-uri. Dacă unul cade, restul continuă. Oricine poate găzdui un nod și contribui la rețea. Mesajele directe sunt criptate end-to-end: nici măcar gazda nu le poate citi.",
+	"landing.distributed.cta": "Devino gazdă Vonk",
+
 	"landing.finances.title": "Totul transparent",
 	"landing.finances.body": "Fiecare euro pe care Vonk îl primește și îl cheltuiește este afișat public. Donații, facturi, costuri de hosting, transferuri către caritate — totul lizibil în direct, de oricine. În curând la /open.",
 
@@ -28,5 +32,48 @@
 
 	"landing.footer.license": "Vonk — AGPL-3.0",
 	"landing.footer.source": "Cod & issues pe GitHub",
-	"landing.footer.europe": "Făcut în Europa 🇪🇺"
+	"landing.footer.europe": "Făcut în Europa 🇪🇺",
+
+	"login.title": "Bine ai venit pe Vonk",
+	"login.subtitle": "Conectează-te cu un cont pe care îl ai deja. Fără parole de ținut minte, fără spam.",
+	"login.google": "Conectare cu Google",
+	"login.github": "Conectare cu GitHub",
+	"login.apple": "Conectare cu Apple",
+	"login.more_providers": "Mai mulți furnizori vor fi disponibili odată ce cheile lor sunt înregistrate.",
+
+	"onboarding.title": "Să-ți pregătim profilul",
+	"onboarding.step_username": "Alege un nume de utilizator",
+	"onboarding.step_avatar": "O fotografie?",
+	"onboarding.step_friends": "Găsește-ți prietenii",
+	"onboarding.step_of": "Pasul {current} din {total}",
+
+	"username.label": "Nume de utilizator",
+	"username.help": "3–30 caractere — litere, cifre, underscore.",
+	"username.available": "Disponibil ✓",
+	"username.taken": "Deja ocupat",
+	"username.invalid": "Doar a–z, 0–9 și _ (underscore) sunt permise",
+	"username.reserved": "Acest prefix este rezervat",
+	"username.continue": "Următorul — alege o fotografie",
+
+	"avatar.title": "Arată-te",
+	"avatar.help": "O fotografie a feței tale sau orice altceva. Eliminăm metadatele EXIF (cum ar fi coordonatele GPS) înainte de stocare.",
+	"avatar.choose": "Alege o fotografie",
+	"avatar.change": "Alege altă fotografie",
+	"avatar.uploading": "Se încarcă…",
+	"avatar.skip": "Mai târziu",
+	"avatar.continue": "Următorul — găsește prieteni",
+
+	"friends.title": "Invită-ți prietenii!",
+	"friends.help": "Vonk e mai distractiv cu oameni pe care îi cunoști. Invită-i prin e-mail, găsește-i după numele de utilizator de pe alte platforme sau descoperă utilizatori noi Vonk.",
+	"friends.invite": "Invită prieteni",
+	"friends.discover": "Descoperă oameni",
+	"friends.done": "Mai târziu",
+
+	"home.welcome": "Bine ai venit, {name}!",
+	"home.empty": "Feed-ul tău e gol deocamdată. Faza 2 e pe drum: postări, urmărire, stories.",
+	"home.logout": "Deconectare",
+
+	"error.generic": "Ceva nu a funcționat. Încearcă din nou.",
+	"error.unauthenticated": "Sesiunea ta a expirat. Conectează-te din nou.",
+	"error.google_not_configured": "Autentificarea cu Google nu este încă configurată pe server."
 }

@@ -20,6 +20,10 @@
 	"landing.pillar4.title": "Twoje tempo, twój feed",
 	"landing.pillar4.body": "Chronologiczna oś czasu. Bez algorytmu zaangażowania, bez pętli dopaminowych, bez „polecanych dla ciebie”. Polubienia? Tylko autor widzi, ile osób polubiło jego post — ty decydujesz, czy ma to wpływać na twój nastrój.",
 
+	"landing.distributed.title": "Rozproszony, nie scentralizowany",
+	"landing.distributed.body": "Vonk nie działa na jednym serwerze. Twoje dane są szyfrowane i rozdzielone na wiele węzłów — jak RAID dla dysków twardych. Jeśli jeden padnie, reszta działa dalej. Każdy może hostować węzeł i wspierać sieć. Wiadomości prywatne mają szyfrowanie end-to-end: nawet administrator węzła nie może ich odczytać.",
+	"landing.distributed.cta": "Zostań hostem Vonk",
+
 	"landing.finances.title": "Wszystko transparentnie",
 	"landing.finances.body": "Każde euro, które Vonk otrzymuje i wydaje, jest jawne. Darowizny, faktury, koszty hostingu, przelewy do organizacji charytatywnych — wszystko czytelne na żywo, dla każdego. Wkrótce na /open.",
 
@@ -28,5 +32,48 @@
 
 	"landing.footer.license": "Vonk — AGPL-3.0",
 	"landing.footer.source": "Kod i issues na GitHubie",
-	"landing.footer.europe": "Zrobione w Europie 🇪🇺"
+	"landing.footer.europe": "Zrobione w Europie 🇪🇺",
+
+	"login.title": "Witaj w Vonk",
+	"login.subtitle": "Zaloguj się istniejącym kontem. Bez haseł do zapamiętywania, bez spamu.",
+	"login.google": "Zaloguj się przez Google",
+	"login.github": "Zaloguj się przez GitHub",
+	"login.apple": "Zaloguj się przez Apple",
+	"login.more_providers": "Więcej dostawców pojawi się, gdy ich klucze zostaną zarejestrowane.",
+
+	"onboarding.title": "Skonfigurujmy Twój profil",
+	"onboarding.step_username": "Wybierz nazwę użytkownika",
+	"onboarding.step_avatar": "Zdjęcie?",
+	"onboarding.step_friends": "Znajdź znajomych",
+	"onboarding.step_of": "Krok {current} z {total}",
+
+	"username.label": "Nazwa użytkownika",
+	"username.help": "3–30 znaków — litery, cyfry, podkreślnik.",
+	"username.available": "Dostępna ✓",
+	"username.taken": "Już zajęta",
+	"username.invalid": "Dozwolone tylko a–z, 0–9 i _ (podkreślnik)",
+	"username.reserved": "Ten prefiks jest zarezerwowany",
+	"username.continue": "Dalej — wybierz zdjęcie",
+
+	"avatar.title": "Pokaż się",
+	"avatar.help": "Zdjęcie twarzy albo cokolwiek. Usuwamy metadane EXIF (jak współrzędne GPS) przed zapisaniem.",
+	"avatar.choose": "Wybierz zdjęcie",
+	"avatar.change": "Wybierz inne zdjęcie",
+	"avatar.uploading": "Wysyłanie…",
+	"avatar.skip": "Później",
+	"avatar.continue": "Dalej — znajdź znajomych",
+
+	"friends.title": "Zaproś znajomych!",
+	"friends.help": "Vonk jest fajniejszy z ludźmi, których znasz. Zaproś ich e-mailem, znajdź po nazwie użytkownika z innych platform lub odkryj nowych użytkowników Vonk.",
+	"friends.invite": "Zaproś znajomych",
+	"friends.discover": "Odkryj ludzi",
+	"friends.done": "Później",
+
+	"home.welcome": "Witaj, {name}!",
+	"home.empty": "Twój feed jest jeszcze pusty. Faza 2 już w drodze: posty, obserwowanie, stories.",
+	"home.logout": "Wyloguj się",
+
+	"error.generic": "Coś poszło nie tak. Spróbuj ponownie.",
+	"error.unauthenticated": "Twoja sesja wygasła. Zaloguj się ponownie.",
+	"error.google_not_configured": "Logowanie przez Google nie jest jeszcze skonfigurowane na serwerze."
 }

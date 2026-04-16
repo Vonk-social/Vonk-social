@@ -20,6 +20,10 @@
 	"landing.pillar4.title": "Votre rythme, votre fil",
 	"landing.pillar4.body": "Fil chronologique. Pas d'algorithme d'engagement, pas de boucles dopaminergiques, pas de « suggéré pour vous ». Les likes ? Seul l'auteur voit combien de personnes ont apprécié son post — à vous de décider si cela doit influencer votre humeur.",
 
+	"landing.distributed.title": "Distribué, pas centralisé",
+	"landing.distributed.body": "Vonk ne tourne pas sur un seul serveur. Vos données sont chiffrées et réparties sur plusieurs nœuds — comme un RAID pour disques durs. Si l'un tombe en panne, le reste continue. N'importe qui peut héberger un nœud et contribuer au réseau. Les messages privés sont chiffrés de bout en bout : même l'hébergeur ne peut pas les lire.",
+	"landing.distributed.cta": "Devenir hôte Vonk",
+
 	"landing.finances.title": "Tout transparent",
 	"landing.finances.body": "Chaque euro reçu et dépensé par Vonk est public. Dons, factures, frais d'hébergement, versements aux œuvres caritatives — tout est lisible en direct par tout le monde. Bientôt sur /open.",
 
@@ -28,5 +32,48 @@
 
 	"landing.footer.license": "Vonk — AGPL-3.0",
 	"landing.footer.source": "Code & issues sur GitHub",
-	"landing.footer.europe": "Fait en Europe 🇪🇺"
+	"landing.footer.europe": "Fait en Europe 🇪🇺",
+
+	"login.title": "Bienvenue sur Vonk",
+	"login.subtitle": "Connectez-vous avec un compte existant. Pas de mot de passe à retenir, pas de spam.",
+	"login.google": "Se connecter avec Google",
+	"login.github": "Se connecter avec GitHub",
+	"login.apple": "Se connecter avec Apple",
+	"login.more_providers": "D'autres fournisseurs seront disponibles dès que leurs clés seront enregistrées.",
+
+	"onboarding.title": "Configurons votre profil",
+	"onboarding.step_username": "Choisissez un pseudo",
+	"onboarding.step_avatar": "Une photo ?",
+	"onboarding.step_friends": "Trouvez vos amis",
+	"onboarding.step_of": "Étape {current} sur {total}",
+
+	"username.label": "Pseudo",
+	"username.help": "3 à 30 caractères — lettres, chiffres, underscore.",
+	"username.available": "Disponible ✓",
+	"username.taken": "Déjà pris",
+	"username.invalid": "Seuls a–z, 0–9 et _ (underscore) sont autorisés",
+	"username.reserved": "Ce préfixe est réservé",
+	"username.continue": "Suivant — choisir une photo",
+
+	"avatar.title": "Montrez-vous",
+	"avatar.help": "Une photo de votre visage, ou n'importe quoi. Nous supprimons les métadonnées EXIF (comme les coordonnées GPS) avant de la stocker.",
+	"avatar.choose": "Choisir une photo",
+	"avatar.change": "Choisir une autre photo",
+	"avatar.uploading": "Envoi en cours…",
+	"avatar.skip": "Plus tard",
+	"avatar.continue": "Suivant — trouver des amis",
+
+	"friends.title": "Invitez vos amis !",
+	"friends.help": "Vonk, c'est mieux avec des gens que vous connaissez. Invitez-les par e-mail, trouvez-les par leur pseudo sur d'autres plateformes, ou découvrez de nouveaux utilisateurs Vonk.",
+	"friends.invite": "Inviter des amis",
+	"friends.discover": "Découvrir des gens",
+	"friends.done": "Plus tard",
+
+	"home.welcome": "Bienvenue, {name} !",
+	"home.empty": "Votre fil est encore vide. La phase 2 arrive : publications, abonnements, stories.",
+	"home.logout": "Se déconnecter",
+
+	"error.generic": "Quelque chose s'est mal passé. Veuillez réessayer.",
+	"error.unauthenticated": "Votre session a expiré. Veuillez vous reconnecter.",
+	"error.google_not_configured": "La connexion Google n'est pas encore configurée sur le serveur."
 }

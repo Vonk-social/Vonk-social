@@ -20,6 +20,10 @@
 	"landing.pillar4.title": "Vaše tempo, váš feed",
 	"landing.pillar4.body": "Chronologická timeline. Žádný algoritmus zapojení, žádné dopaminové smyčky, žádné «doporučeno pro vás». Lajky? Jen autor vidí, kolik lidí příspěvek ocenilo — vy rozhodujete, zda to má ovlivnit vaši náladu.",
 
+	"landing.distributed.title": "Distribuovaný, ne centralizovaný",
+	"landing.distributed.body": "Vonk neběží na jednom serveru. Vaše data jsou šifrována a rozložena na více uzlů — jako RAID u pevných disků. Pokud jeden selže, ostatní pokračují. Kdokoli může provozovat uzel a přispívat k síti. Přímé zprávy jsou šifrovány end-to-end: ani provozovatel uzlu je nemůže přečíst.",
+	"landing.distributed.cta": "Staňte se hostitelem Vonk",
+
 	"landing.finances.title": "Vše transparentní",
 	"landing.finances.body": "Každé euro, které Vonk přijme a utratí, je veřejné. Dary, faktury, náklady na hosting, převody na charitu — vše čitelné v reálném čase, pro každého. Brzy na /open.",
 
@@ -28,5 +32,48 @@
 
 	"landing.footer.license": "Vonk — AGPL-3.0",
 	"landing.footer.source": "Kód a issues na GitHubu",
-	"landing.footer.europe": "Vyrobeno v Evropě 🇪🇺"
+	"landing.footer.europe": "Vyrobeno v Evropě 🇪🇺",
+
+	"login.title": "Vítejte ve Vonk",
+	"login.subtitle": "Přihlaste se účtem, který už máte. Žádná hesla k zapamatování, žádný spam.",
+	"login.google": "Přihlásit přes Google",
+	"login.github": "Přihlásit přes GitHub",
+	"login.apple": "Přihlásit přes Apple",
+	"login.more_providers": "Další poskytovatelé budou dostupní, jakmile budou registrovány jejich klíče.",
+
+	"onboarding.title": "Nastavíme vám profil",
+	"onboarding.step_username": "Zvolte uživatelské jméno",
+	"onboarding.step_avatar": "Fotka?",
+	"onboarding.step_friends": "Najděte kamarády",
+	"onboarding.step_of": "Krok {current} z {total}",
+
+	"username.label": "Uživatelské jméno",
+	"username.help": "3–30 znaků — písmena, číslice, podtržítko.",
+	"username.available": "Dostupné ✓",
+	"username.taken": "Už je obsazené",
+	"username.invalid": "Povoleny jsou pouze a–z, 0–9 a _ (podtržítko)",
+	"username.reserved": "Tento prefix je rezervovaný",
+	"username.continue": "Další — vyberte fotku",
+
+	"avatar.title": "Ukažte se",
+	"avatar.help": "Fotka obličeje nebo čehokoliv. Před uložením odstraníme EXIF metadata (jako GPS souřadnice).",
+	"avatar.choose": "Vybrat fotku",
+	"avatar.change": "Vybrat jinou fotku",
+	"avatar.uploading": "Nahrávání…",
+	"avatar.skip": "Přeskočit",
+	"avatar.continue": "Další — najít kamarády",
+
+	"friends.title": "Pozvěte kamarády!",
+	"friends.help": "Vonk je zábavnější s lidmi, které znáte. Pozvěte je e-mailem, najděte je podle uživatelského jména na jiných platformách nebo objevte nové uživatele Vonk.",
+	"friends.invite": "Pozvat kamarády",
+	"friends.discover": "Objevte lidi",
+	"friends.done": "Později",
+
+	"home.welcome": "Vítejte, {name}!",
+	"home.empty": "Váš feed je zatím prázdný. Fáze 2 je na cestě: příspěvky, sledování, stories.",
+	"home.logout": "Odhlásit se",
+
+	"error.generic": "Něco se pokazilo. Zkuste to znovu.",
+	"error.unauthenticated": "Vaše relace vypršela. Přihlaste se znovu.",
+	"error.google_not_configured": "Přihlášení přes Google zatím není na serveru nastaveno."
 }

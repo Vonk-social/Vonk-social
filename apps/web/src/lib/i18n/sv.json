@@ -20,6 +20,10 @@
 	"landing.pillar4.title": "Din takt, ditt flöde",
 	"landing.pillar4.body": "Kronologisk tidslinje. Ingen engagemangsalgoritm, inga dopaminloopar, inga «föreslaget för dig». Gillningar? Bara författaren ser hur många som gillat ett inlägg — du avgör själv om det ska påverka ditt humör.",
 
+	"landing.distributed.title": "Distribuerat, inte centraliserat",
+	"landing.distributed.body": "Vonk kör inte på en enda server. Dina data krypteras och sprids över flera noder — som RAID för hårddiskar. Om en nod går ner fortsätter resten. Vem som helst kan köra en nod och bidra till nätverket. Direktmeddelanden är end-to-end-krypterade: inte ens den som kör noden kan läsa dem.",
+	"landing.distributed.cta": "Bli Vonk-värd",
+
 	"landing.finances.title": "Allt transparent",
 	"landing.finances.body": "Varje euro Vonk får in och spenderar visas offentligt. Donationer, fakturor, hostingkostnader, överföringar till välgörenhet — allt läsbart i realtid, av vem som helst. Snart på /open.",
 
@@ -28,5 +32,48 @@
 
 	"landing.footer.license": "Vonk — AGPL-3.0",
 	"landing.footer.source": "Kod & issues på GitHub",
-	"landing.footer.europe": "Gjort i Europa 🇪🇺"
+	"landing.footer.europe": "Gjort i Europa 🇪🇺",
+
+	"login.title": "Välkommen till Vonk",
+	"login.subtitle": "Logga in med ett konto du redan har. Inga lösenord att komma ihåg, ingen spam.",
+	"login.google": "Logga in med Google",
+	"login.github": "Logga in med GitHub",
+	"login.apple": "Logga in med Apple",
+	"login.more_providers": "Fler inloggningsalternativ blir tillgängliga så fort deras nycklar registreras.",
+
+	"onboarding.title": "Låt oss ställa in din profil",
+	"onboarding.step_username": "Välj ett användarnamn",
+	"onboarding.step_avatar": "Ett foto?",
+	"onboarding.step_friends": "Hitta dina vänner",
+	"onboarding.step_of": "Steg {current} av {total}",
+
+	"username.label": "Användarnamn",
+	"username.help": "3–30 tecken — bokstäver, siffror, understreck.",
+	"username.available": "Ledigt ✓",
+	"username.taken": "Redan upptaget",
+	"username.invalid": "Bara a–z, 0–9 och _ (understreck) tillåtna",
+	"username.reserved": "Det här prefixet är reserverat",
+	"username.continue": "Nästa — välj foto",
+
+	"avatar.title": "Visa dig",
+	"avatar.help": "Ett foto av dig, eller vad som helst. Vi tar bort EXIF-data (som GPS-koordinater) innan vi sparar.",
+	"avatar.choose": "Välj foto",
+	"avatar.change": "Välj ett annat foto",
+	"avatar.uploading": "Laddar upp…",
+	"avatar.skip": "Hoppa över",
+	"avatar.continue": "Nästa — hitta vänner",
+
+	"friends.title": "Bjud in dina vänner!",
+	"friends.help": "Vonk är roligare med folk du känner. Bjud in dem via e-post, hitta dem via deras användarnamn på andra plattformar eller upptäck nya Vonk-användare.",
+	"friends.invite": "Bjud in vänner",
+	"friends.discover": "Upptäck personer",
+	"friends.done": "Gör det senare",
+
+	"home.welcome": "Välkommen, {name}!",
+	"home.empty": "Ditt flöde är tomt just nu. Fas 2 är på väg: inlägg, följa, stories.",
+	"home.logout": "Logga ut",
+
+	"error.generic": "Något gick fel. Försök igen.",
+	"error.unauthenticated": "Din session har löpt ut. Logga in igen.",
+	"error.google_not_configured": "Google-inloggning är inte konfigurerat på servern ännu."
 }
