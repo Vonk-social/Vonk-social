@@ -49,6 +49,30 @@ export const actions: Actions = {
 			return fail(500, { error: (e as Error).message });
 		}
 	},
+	saveHandles: async ({ request, cookies }) => {
+		const data = await request.formData();
+		const cookieHeader = cookies
+			.getAll()
+			.map((c) => `${c.name}=${c.value}`)
+			.join('; ');
+		try {
+			await patchMe(
+				{
+					handle_instagram: String(data.get('handle_instagram') ?? ''),
+					handle_twitter: String(data.get('handle_twitter') ?? ''),
+					handle_snapchat: String(data.get('handle_snapchat') ?? ''),
+					handle_telegram: String(data.get('handle_telegram') ?? ''),
+					handle_bluesky: String(data.get('handle_bluesky') ?? ''),
+					handle_mastodon: String(data.get('handle_mastodon') ?? ''),
+					handle_website: String(data.get('handle_website') ?? '')
+				},
+				cookieHeader
+			);
+			return { saved: true };
+		} catch (e) {
+			return fail(500, { error: (e as Error).message });
+		}
+	},
 	logoutEverywhere: async ({ fetch, cookies }) => {
 		const cookieHeader = cookies
 			.getAll()

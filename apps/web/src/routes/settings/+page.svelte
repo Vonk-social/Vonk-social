@@ -5,8 +5,42 @@
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import type { PageProps } from './$types';
 	import { toasts } from '$lib/stores/toasts';
+	import * as push from '$lib/push';
+	import { onMount } from 'svelte';
 
 	let { data, form }: PageProps = $props();
+
+	let pushEnabled = $state(false);
+	let pushBusy = $state(false);
+	let pushSupported = $state(false);
+
+	onMount(async () => {
+		pushSupported = await push.isSupported();
+		pushEnabled = !!(await push.currentSubscription());
+	});
+
+	async function togglePush() {
+		pushBusy = true;
+		try {
+			if (pushEnabled) {
+				await push.unsubscribe();
+				pushEnabled = false;
+				toasts.push('success', 'Notificaties uitgezet');
+			} else {
+				const ok = await push.subscribe();
+				if (ok) {
+					pushEnabled = true;
+					toasts.push('success', 'Notificaties aan');
+				} else {
+					toasts.push('error', 'Notificaties niet beschikbaar');
+				}
+			}
+		} catch (e) {
+			toasts.push('error', (e as Error).message);
+		} finally {
+			pushBusy = false;
+		}
+	}
 
 	let avatarBusy = $state(false);
 	let avatarPreview = $state<string | null>(null);
@@ -144,6 +178,40 @@
 	</section>
 
 	<section class="vonk-card mb-4">
+		<h2 class="mb-3 font-display text-lg font-bold text-ink">Externe profielen</h2>
+		<p class="mb-3 text-sm text-muted">
+			Handvatten die je hier invult laten vrienden je vinden via de
+			wizard 'Mensen die je misschien kent'. Wij scrapen niets; we
+			matchen enkel tegen wat andere Vonk-gebruikers zelf opgaven.
+		</p>
+		<form method="POST" action="?/saveHandles" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+			{#each [
+				['handle_instagram', 'Instagram', data.user.handle_instagram ?? ''],
+				['handle_twitter', 'X / Twitter', data.user.handle_twitter ?? ''],
+				['handle_snapchat', 'Snapchat', data.user.handle_snapchat ?? ''],
+				['handle_telegram', 'Telegram', data.user.handle_telegram ?? ''],
+				['handle_bluesky', 'Bluesky', data.user.handle_bluesky ?? ''],
+				['handle_mastodon', 'Mastodon', data.user.handle_mastodon ?? ''],
+				['handle_website', 'Website', data.user.handle_website ?? '']
+			] as [name, label, val] (name)}
+				<label class="text-sm font-semibold text-ink">
+					{label}
+					<input
+						type="text"
+						{name}
+						value={val}
+						placeholder={name === 'handle_website' ? 'https://…' : '@…'}
+						class="mt-1 block w-full rounded-xl border border-border bg-white px-3 py-2 text-ink focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/30"
+					/>
+				</label>
+			{/each}
+			<div class="col-span-full self-end">
+				<Button type="submit">Opslaan</Button>
+			</div>
+		</form>
+	</section>
+
+	<section class="vonk-card mb-4">
 		<h2 class="mb-3 font-display text-lg font-bold text-ink">Privacy</h2>
 		<form method="POST" action="?/savePrivacy" class="flex items-center justify-between gap-3">
 			<label class="flex items-start gap-3">
@@ -162,6 +230,40 @@
 			</label>
 			<Button type="submit">Opslaan</Button>
 		</form>
+	</section>
+
+	<section class="vonk-card mb-4">
+		<h2 class="mb-3 font-display text-lg font-bold text-ink">Notificaties</h2>
+		{#if pushSupported}
+			<div class="flex items-center justify-between gap-3">
+				<div>
+					<div class="font-semibold text-ink">Push-notificaties in de browser</div>
+					<div class="text-sm text-muted">
+						Ping bij nieuwe DM's, mentions en volgers. Alleen dit apparaat — je kan het op elk
+						apparaat apart aan/uit zetten.
+					</div>
+				</div>
+				<Button type="button" variant="ghost" disabled={pushBusy} onclick={togglePush}>
+					{pushEnabled ? 'Uitzetten' : 'Aanzetten'}
+				</Button>
+			</div>
+		{:else}
+			<p class="text-sm text-muted">
+				Je browser ondersteunt geen push-notificaties, of je hebt ze geweigerd. iOS Safari? Voeg
+				Vonk eerst toe aan je beginscherm.
+			</p>
+		{/if}
+	</section>
+
+	<section class="vonk-card mb-4">
+		<h2 class="mb-3 font-display text-lg font-bold text-ink">Vrienden</h2>
+		<p class="mb-3 text-sm text-muted">
+			Nodig mensen uit per e-mail of vind bestaande Vonk-vrienden via hun handvatten op andere
+			platforms.
+		</p>
+		<a href="/invite">
+			<Button type="button" variant="ghost">Vrienden uitnodigen →</Button>
+		</a>
 	</section>
 
 	<section class="vonk-card">

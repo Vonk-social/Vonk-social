@@ -36,13 +36,10 @@ impl FromRequestParts<AppState> for AuthUser {
         let claims = jwt::verify(&token, &state.config).map_err(|_| ApiError::Unauthenticated)?;
         let user_id = claims.user_id().ok_or(ApiError::Unauthenticated)?;
 
-        let user = sqlx::query_as::<_, User>(
-            "SELECT id, uuid, username, display_name, email, email_verified, \
-                bio, avatar_url, banner_url, location_city, location_country, \
-                locale, is_private, is_suspended, created_at, updated_at, \
-                onboarding_completed_at \
-             FROM users WHERE id = $1 AND deleted_at IS NULL",
-        )
+        let user = sqlx::query_as::<_, User>(&format!(
+            "SELECT {cols} FROM users WHERE id = $1 AND deleted_at IS NULL",
+            cols = User::COLUMNS,
+        ))
         .bind(user_id)
         .fetch_optional(&state.db)
         .await

@@ -33,7 +33,9 @@
 	"login.title": "Welkom bij Vonk",
 	"login.subtitle": "Meld je aan met je bestaande account. Geen wachtwoorden om te onthouden, geen spam.",
 	"login.google": "Aanmelden met Google",
-	"login.more_providers": "Apple en GitHub volgen later.",
+	"login.github": "Aanmelden met GitHub",
+	"login.apple": "Aanmelden met Apple",
+	"login.more_providers": "Meer inlogopties worden live gezet zodra de sleutels geregistreerd zijn.",
 
 	"onboarding.title": "Even je profiel klaarzetten",
 	"onboarding.step_username": "Kies je gebruikersnaam",

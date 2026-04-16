@@ -34,6 +34,14 @@ export type SessionUser = {
 	is_private: boolean;
 	needs_onboarding: boolean;
 	created_at: string;
+	handle_instagram?: string | null;
+	handle_twitter?: string | null;
+	handle_snapchat?: string | null;
+	handle_telegram?: string | null;
+	handle_bluesky?: string | null;
+	handle_mastodon?: string | null;
+	handle_website?: string | null;
+	public_key?: string | null;
 };
 
 export type MeProfile = SessionUser;
@@ -122,6 +130,14 @@ export async function patchMe(
 		locale: string;
 		is_private: boolean;
 		finish_onboarding: boolean;
+		handle_instagram: string;
+		handle_twitter: string;
+		handle_snapchat: string;
+		handle_telegram: string;
+		handle_bluesky: string;
+		handle_mastodon: string;
+		handle_website: string;
+		public_key: string;
 	}>,
 	cookies?: string
 ): Promise<SessionUser> {
