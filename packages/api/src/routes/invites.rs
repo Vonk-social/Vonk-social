@@ -98,59 +98,65 @@ async fn create(
         })));
     }
 
-    // Dispatch the mail. If SMTP isn't wired up yet, leave the row
-    // queued so a later sweep can pick it up — failure here is not
-    // fatal to the API call.
-    let sent = if state.config.smtp_configured() {
+    // Dispatch the mail in a background task so the HTTP response
+    // returns immediately. SMTP can be slow (DNS, TLS handshake,
+    // Postal queue) and we don't want a 504 gateway timeout.
+    if state.config.smtp_configured() {
+        let db = state.db.clone();
+        let cfg = state.config.clone();
+        let to_email = req.email.clone();
         let display = if user.display_name.is_empty() {
             user.username.clone()
         } else {
             user.display_name.clone()
         };
-        let text = invite_text(&display, req.note.as_deref(), invite_uuid);
-        let html = invite_html(&display, req.note.as_deref(), invite_uuid);
-        match email::send(
-            &state.config,
-            Outgoing {
-                to: req.email.clone(),
-                subject: format!("{display} nodigt je uit op Vonk"),
-                text_body: text,
-                html_body: Some(html),
-            },
-        )
-        .await
-        {
-            Ok(()) => {
-                let _ = sqlx::query(
-                    "UPDATE email_invites SET sent_at = now() WHERE uuid = $1",
-                )
-                .bind(invite_uuid)
-                .execute(&state.db)
-                .await;
-                true
+        let note = req.note.clone();
+        tokio::spawn(async move {
+            let text = invite_text(&display, note.as_deref(), invite_uuid);
+            let html = invite_html(&display, note.as_deref(), invite_uuid);
+            match email::send(
+                &cfg,
+                Outgoing {
+                    to: to_email.clone(),
+                    subject: format!("{display} nodigt je uit op Vonk"),
+                    text_body: text,
+                    html_body: Some(html),
+                },
+            )
+            .await
+            {
+                Ok(()) => {
+                    let _ = sqlx::query(
+                        "UPDATE email_invites SET sent_at = now() WHERE uuid = $1",
+                    )
+                    .bind(invite_uuid)
+                    .execute(&db)
+                    .await;
+                    tracing::info!(email = %to_email, "invite sent");
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, chain = ?e.source(), email = %to_email, "invite send failed");
+                    let _ = sqlx::query(
+                        "UPDATE email_invites SET failed_at = now(), failure_reason = $1 WHERE uuid = $2",
+                    )
+                    .bind(format!("{e:#}"))
+                    .bind(invite_uuid)
+                    .execute(&db)
+                    .await;
+                }
             }
-            Err(e) => {
-                tracing::warn!(error = %e, email = %req.email, "invite send failed");
-                let _ = sqlx::query(
-                    "UPDATE email_invites SET failed_at = now(), failure_reason = $1 WHERE uuid = $2",
-                )
-                .bind(format!("{e}"))
-                .bind(invite_uuid)
-                .execute(&state.db)
-                .await;
-                false
-            }
-        }
-    } else {
-        false
-    };
+        });
+    }
 
+    // We always respond "queued" immediately — the background task
+    // flips sent_at/failed_at async. The frontend can poll /sent if
+    // it wants to show delivery status later.
     Ok(Json(serde_json::json!({
         "data": {
             "uuid": invite_uuid,
             "email": req.email,
-            "sent": sent,
-            "message": if sent { "sent" } else { "queued" },
+            "sent": false,
+            "message": "queued",
         }
     })))
 }
