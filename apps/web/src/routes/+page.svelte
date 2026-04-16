@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import GoogleButton from '$lib/components/GoogleButton.svelte';
+	import ProviderButton from '$lib/components/ProviderButton.svelte';
 	import VonkLogo from '$lib/components/VonkLogo.svelte';
 	import LanguageSwitcher from '$lib/components/ui/LanguageSwitcher.svelte';
 	import { t } from '$lib/i18n';
@@ -9,6 +10,7 @@
 
 	let { data }: PageProps = $props();
 	const locale = $derived(data.user?.locale ?? data.locale ?? 'nl');
+	const providers = $derived(data.providers ?? { google: true, github: false, apple: false });
 
 	onMount(() => {
 		if (data.user?.needs_onboarding) goto('/onboarding/username');
@@ -46,7 +48,15 @@
 		</p>
 
 		<div class="mt-10 flex w-full max-w-xs flex-col gap-3">
-			<GoogleButton label={t('landing.cta.login', locale)} />
+			{#if providers.google}
+				<GoogleButton label={t('landing.cta.login', locale)} />
+			{/if}
+			{#if providers.github}
+				<ProviderButton provider="github" label={t('login.github', locale)} href="/api/auth/login/github" />
+			{/if}
+			{#if providers.apple}
+				<ProviderButton provider="apple" label={t('login.apple', locale)} href="/api/auth/login/apple" />
+			{/if}
 			<a
 				href="#why"
 				class="text-center text-sm font-medium text-muted underline decoration-border underline-offset-4 hover:text-ink"
@@ -198,8 +208,16 @@
 		<p class="mt-4 max-w-xl text-muted">
 			{t('landing.cta2.body', locale)}
 		</p>
-		<div class="mt-8 w-full max-w-xs">
-			<GoogleButton label={t('landing.cta.login', locale)} />
+		<div class="mt-8 flex w-full max-w-xs flex-col gap-3">
+			{#if providers.google}
+				<GoogleButton label={t('landing.cta.login', locale)} />
+			{/if}
+			{#if providers.github}
+				<ProviderButton provider="github" label={t('login.github', locale)} href="/api/auth/login/github" />
+			{/if}
+			{#if providers.apple}
+				<ProviderButton provider="apple" label={t('login.apple', locale)} href="/api/auth/login/apple" />
+			{/if}
 		</div>
 	</div>
 </section>
