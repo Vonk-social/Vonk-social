@@ -148,7 +148,7 @@
 <!-- ── Distributed network ─────────────────────────────────── -->
 <section class="px-6 py-12">
 	<div class="mx-auto max-w-3xl">
-		<article class="vonk-card vonk-spark text-white">
+		<article class="vonk-spark rounded-[var(--radius-card)] p-8 text-white shadow-lg">
 			<h2 class="font-display text-2xl font-bold">
 				🌐 {t('landing.distributed.title', locale)}
 			</h2>
