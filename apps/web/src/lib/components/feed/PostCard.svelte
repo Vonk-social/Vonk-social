@@ -58,7 +58,9 @@
 	);
 
 	async function load(limit = 20) {
-		if (loading || loaded) return;
+		if (loading) return;
+		// Allow re-loading with a higher limit (e.g. auto-loaded 3, user clicks "show all")
+		if (loaded && limit <= replies.length) return;
 		loading = true;
 		try {
 			const page = await fetchReplies(post.uuid, { limit });
@@ -261,27 +263,27 @@
 					{#each replies as r (r.uuid)}
 						<Self post={r} {user} depth={depth + 1} />
 					{/each}
-					{#if hasMore}
+					{#if hasMore || (replyCount > replies.length)}
 						<div class="mt-2 text-center">
 							<button
 								type="button"
 								class="rounded-full border border-border px-4 py-1.5 text-sm font-semibold text-ink hover:bg-border/40"
 								disabled={loading}
-								onclick={loadMore}
-							>{loading ? 'Laden…' : 'Meer reacties'}</button>
+								onclick={hasMore ? loadMore : () => load(20)}
+							>{loading ? 'Laden…' : `Bekijk alle ${replyCount} reacties`}</button>
 						</div>
 					{/if}
 				{/if}
 
-				{#if user && !composing}
-					<div class="mt-3 text-center">
+				<div class="mt-2 flex items-center justify-center gap-3">
+					{#if user && !composing}
 						<button
 							type="button"
 							class="text-sm font-semibold text-terracotta hover:underline"
 							onclick={() => (composing = true)}
-						>Reageer opnieuw</button>
-					</div>
-				{/if}
+						>Reageer</button>
+					{/if}
+				</div>
 			</section>
 		{/if}
 	</article>
