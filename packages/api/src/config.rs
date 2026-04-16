@@ -38,6 +38,10 @@ pub struct AppConfig {
     pub jwt_secret: String,
     pub jwt_access_ttl: Duration,
     pub refresh_ttl: Duration,
+    pub apple_client_id: String,
+    pub apple_team_id: String,
+    pub apple_key_id: String,
+    pub apple_private_key: String,
     pub github_client_id: String,
     pub github_client_secret: String,
     pub google_client_id: String,
@@ -100,6 +104,10 @@ impl AppConfig {
             jwt_secret,
             jwt_access_ttl: Duration::from_secs(env_parsed("JWT_ACCESS_TTL_SECS", 15 * 60)?),
             refresh_ttl: Duration::from_secs(env_parsed("REFRESH_TTL_SECS", 30 * 24 * 60 * 60)?),
+            apple_client_id: std::env::var("APPLE_CLIENT_ID").unwrap_or_default(),
+            apple_team_id: std::env::var("APPLE_TEAM_ID").unwrap_or_default(),
+            apple_key_id: std::env::var("APPLE_KEY_ID").unwrap_or_default(),
+            apple_private_key: std::env::var("APPLE_PRIVATE_KEY").unwrap_or_default(),
             github_client_id: std::env::var("GITHUB_CLIENT_ID").unwrap_or_default(),
             github_client_secret: std::env::var("GITHUB_CLIENT_SECRET").unwrap_or_default(),
             google_client_id: std::env::var("GOOGLE_CLIENT_ID").unwrap_or_default(),
@@ -138,6 +146,15 @@ impl AppConfig {
     /// True when GitHub OAuth credentials are configured.
     pub fn github_configured(&self) -> bool {
         !self.github_client_id.is_empty() && !self.github_client_secret.is_empty()
+    }
+
+    /// True when Apple Sign-in is fully configured. Token exchange also
+    /// needs the `.p8` private key, so we check all four fields.
+    pub fn apple_configured(&self) -> bool {
+        !self.apple_client_id.is_empty()
+            && !self.apple_team_id.is_empty()
+            && !self.apple_key_id.is_empty()
+            && !self.apple_private_key.is_empty()
     }
 }
 
