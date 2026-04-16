@@ -71,10 +71,13 @@ pub struct AppConfig {
     /// to allow multiple front-end hosts.
     pub cors_origins: Vec<String>,
 
-    // Email (Postal SMTP)
+    // Email (Postal HTTP API)
     pub smtp_host: String,
+    #[allow(dead_code)] // Kept for potential SMTP fallback.
     pub smtp_port: u16,
+    #[allow(dead_code)]
     pub smtp_user: String,
+    /// Postal API key (X-Server-API-Key) or SMTP password.
     pub smtp_pass: String,
     pub smtp_from: String,
     pub smtp_from_name: String,
