@@ -1,10 +1,15 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { patchMe } from '$lib/api/core';
+import { patchMe, fetchMe } from '$lib/api/core';
 
-export const load: PageServerLoad = ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, request }) => {
 	if (!locals.user) throw redirect(303, '/');
-	return { user: locals.user };
+	// Always fetch fresh user data so handles etc. are up-to-date
+	// after a form submission (locals.user was set by hooks before
+	// the PATCH action ran).
+	const cookies = request.headers.get('cookie') ?? '';
+	const fresh = await fetchMe(cookies).catch(() => null);
+	return { user: fresh ?? locals.user };
 };
 
 export const actions: Actions = {
@@ -78,8 +83,6 @@ export const actions: Actions = {
 			.getAll()
 			.map((c) => `${c.name}=${c.value}`)
 			.join('; ');
-		// Phase 1 logout invalidates just this session; multi-session logout
-		// ships with the sessions UI in Phase 2.5.
 		await fetch('/api/auth/logout', {
 			method: 'POST',
 			headers: { cookie: cookieHeader }
