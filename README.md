@@ -112,17 +112,28 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 | Share button (web Share API + clipboard fallback) | ✅ |
 | Post menu (pin/unpin + delete on your own posts) | ✅ |
 
-### Phase 3 — E2EE, mobile, friend import ⏸
+### Phase 3 — E2EE, mobile, friend import 🧪
 
 | Feature | Status |
 |---|---|
-| End-to-end-encrypted DMs (MLS protocol) — currently plaintext placeholder | 📋 |
-| Capacitor-wrapped iOS + Android apps | 📋 |
-| Native camera + AR filters / lenses | 📋 |
-| Import-contacts wizard (email invites + contact hash-match + deep-link intents) | 📋 |
-| Push notifications (web push + APNs/FCM) | 📋 |
-| Refresh-token rotation + reuse detection | 📋 |
-| 48h `sessions.ip_hash` sweep cron | 📋 |
+| End-to-end-encrypted snaps (AES-256-GCM + X25519 ECDH v1 envelope) | ✅ |
+| Long-term X25519 keypair in IndexedDB + `public_key` on profile | ✅ |
+| Refresh-token rotation + reuse detection (chain revocation) | ✅ |
+| 48h `sessions.ip_hash` sweep cron (tokio background task) | ✅ |
+| GitHub OAuth 2.0 + PKCE sign-in (gated on env) | ✅ |
+| Apple Sign-in scaffold (authorize-redirect only; callback needs ES256 JWT) | 🟡 |
+| Postal SMTP integration + email invites (`/api/invites`) | ✅ |
+| Handle-based friend discovery (`/api/invites/match-handles`, 6 platforms + website) | ✅ |
+| `/invite` page — e-mail invites + handle-match UI | ✅ |
+| `PATCH /api/users/me` accepts 7 handle fields + `public_key` | ✅ |
+| Web Push subscriptions (`/api/push/*`) + service worker + VAPID | ✅ |
+| `/settings` push toggle + per-device subscribe | ✅ |
+| Login page conditionally renders Google/GitHub/Apple from `/api/health` | ✅ |
+| Capacitor 6 iOS + Android scaffold (`apps/mobile/`) | ✅ |
+| Native camera + contact-hash import via Capacitor plugins | 📋 |
+| Push dispatch from notification sources (DM/mention/follow) | 📋 |
+| Apple Sign-in token exchange (ES256 client_secret, id_token verification) | 📋 |
+| Snap frontend actually calling `encryptFor()` on compose | 📋 |
 
 ### Phase 4+ — Content & growth ⏸
 
@@ -153,11 +164,13 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 ## Privacy by design
 
 - **EXIF stripping** on every upload — decode → re-encode path, never pass through
-- **IP retention** — stored as `sha256(ip || salt || day)`; 48-hour sweep cron is queued for Phase 3
+- **IP retention** — stored as `sha256(ip || salt || day)`; 48-hour sweep cron runs every 15 min
 - **No tracking** — no cookies beyond auth, no fingerprinting, no analytics (Plausible, GA or otherwise)
 - **Private like counts** — the JSON response literally does not contain `like_count` for non-authors (`#[serde(skip_serializing_if)]`), so the UI *cannot* leak it
-- **E2EE DMs** — MLS protocol, landing in Phase 3. Schema already uses a `ciphertext BYTEA` column so the switchover is a drop-in; current plaintext is a documented placeholder
-- **Data export + real delete** — GDPR-compliant, planned for Phase 3
+- **E2EE DMs** — AES-256-GCM + X25519 ECDH v1 envelope shipped for snaps. Long-term keypair lives in IndexedDB; the server stores only ciphertext + ephemeral pubkey + nonce. Migration to MLS is a Phase 4 item; v1 is sufficient for 1:1 messages
+- **Contact import is on-device** — handle-based friend discovery matches against opted-in public handles only. When the Capacitor contacts plugin lands, we hash (SHA-256 + shared salt) email + phone numbers *on the device* and upload only the hashes
+- **Refresh-token reuse detection** — using a rotated refresh cookie twice invalidates the whole lineage (OWASP pattern) and forces re-login
+- **Data export + real delete** — GDPR-compliant, planned for Phase 4
 - **Open source** — AGPL-3.0, every commit is public on GitHub
 
 ## Tech stack
@@ -170,10 +183,13 @@ Legend: ✅ shipped · 🟡 backend ready, frontend pending · 🧪 alpha · �
 | Cache / state | Valkey 8 (Redis-compatible, open-source fork) |
 | Object storage | MinIO (S3-compatible) |
 | Image pipeline | `image` crate + `webp` crate (EXIF-strip → Lanczos3 resize → WebP Q80) |
-| Auth | Hand-rolled Google OIDC + PKCE, HS256 JWTs via `jsonwebtoken` |
+| Auth | Hand-rolled Google + GitHub + Apple OAuth / OIDC + PKCE, HS256 JWTs, refresh-token rotation |
+| Email | Postal via `lettre` (SMTP STARTTLS) |
+| Push | VAPID Web Push + service worker; APNs/FCM via Capacitor on mobile |
+| Client crypto | `@noble/curves` (X25519) + `@noble/ciphers` (AES-256-GCM), keys in IndexedDB |
+| Mobile shell | Capacitor 6 (iOS + Android) in `apps/mobile/` |
 | Dev infra | Docker Compose (db + cache + storage + mailpit) |
 | Prod infra (staging) | nginx + Let's Encrypt + systemd units on a Linux VM |
-| E2EE (planned) | MLS protocol, libsignal-rs |
 
 ## Quick start (development)
 
