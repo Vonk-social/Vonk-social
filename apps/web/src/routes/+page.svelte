@@ -149,17 +149,29 @@
 <section class="px-6 py-12">
 	<div class="mx-auto max-w-3xl">
 		<article class="vonk-spark rounded-[var(--radius-card)] p-8 text-white shadow-lg">
-			<h2 class="font-display text-2xl font-bold">
-				🌐 {t('landing.distributed.title', locale)}
-			</h2>
-			<p class="mt-3 text-white/85">{t('landing.distributed.body', locale)}</p>
-			<div class="mt-5">
-				<a
-					href="/host"
-					class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-terracotta shadow transition-transform hover:scale-105"
-				>
-					🖥️ {t('landing.distributed.cta', locale)}
-				</a>
+			<div class="flex flex-col items-center gap-6 md:flex-row">
+				<div class="flex-1">
+					<h2 class="font-display text-2xl font-bold">
+						🌐 {t('landing.distributed.title', locale)}
+					</h2>
+					<p class="mt-3 text-white/85">{t('landing.distributed.body', locale)}</p>
+					<div class="mt-5">
+						<a
+							href="/host"
+							class="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-bold text-terracotta shadow transition-transform hover:scale-105"
+						>
+							🖥️ {t('landing.distributed.cta', locale)}
+						</a>
+					</div>
+				</div>
+				<div class="w-full max-w-xs shrink-0 md:w-auto">
+					<img
+						src="/illustrations/distributed-network.svg"
+						alt="Vonk gedistribueerd netwerk — data verspreid over meerdere nodes"
+						class="w-full"
+						loading="lazy"
+					/>
+				</div>
 			</div>
 		</article>
 	</div>
