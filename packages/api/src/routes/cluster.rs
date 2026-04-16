@@ -3,6 +3,7 @@
 //! * `POST /api/cluster/join-request`     — volunteer submits hosting application
 //! * `GET  /api/cluster/status`           — public cluster health summary
 //! * `POST /api/cluster/heartbeat`        — node-to-node heartbeat (API-key auth)
+//! * `POST /api/cluster/replicate`        — receive replication events from another node
 
 use axum::{
     extract::State,
@@ -22,6 +23,7 @@ pub fn router() -> Router<AppState> {
         .route("/api/cluster/join-request", post(submit_join_request))
         .route("/api/cluster/status", get(cluster_status))
         .route("/api/cluster/heartbeat", post(heartbeat))
+        .route("/api/cluster/replicate", post(replicate))
 }
 
 // ── Join request (public, no auth) ──────────────────────────
@@ -209,4 +211,70 @@ fn hash_api_key(key: &str) -> String {
     use sha2::{Digest, Sha256};
     let hash = Sha256::digest(key.as_bytes());
     hex::encode(hash)
+}
+
+// ── Replicate (node-to-node, cluster-secret auth) ───────────
+
+#[derive(Debug, Deserialize)]
+struct ReplicateBody {
+    source_node: Uuid,
+    events: Vec<ReplicateEvent>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ReplicateEvent {
+    #[allow(dead_code)]
+    id: i64,
+    table_name: String,
+    row_id: i64,
+    operation: String,
+    payload: serde_json::Value,
+}
+
+async fn replicate(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<ReplicateBody>,
+) -> ApiResult<Json<serde_json::Value>> {
+    // Authenticate via cluster secret.
+    let provided_key = headers
+        .get("X-Cluster-Key")
+        .and_then(|v| v.to_str().ok())
+        .ok_or(ApiError::Unauthenticated)?;
+
+    let cluster_secret: Option<String> = sqlx::query_scalar(
+        "SELECT value FROM cluster_config WHERE key = 'cluster_secret'",
+    )
+    .fetch_optional(&state.db)
+    .await?;
+
+    let secret = cluster_secret.unwrap_or_default();
+    if secret.is_empty() || provided_key != secret {
+        return Err(ApiError::Unauthenticated);
+    }
+
+    // Convert to the replication engine's format and apply.
+    let events: Vec<crate::cluster::replication::QueuedEvent> = body
+        .events
+        .into_iter()
+        .map(|e| crate::cluster::replication::QueuedEvent {
+            id: e.id,
+            table_name: e.table_name,
+            row_id: e.row_id,
+            operation: e.operation,
+            payload: e.payload,
+        })
+        .collect();
+
+    let count = crate::cluster::replication::apply_events(&state.db, events)
+        .await
+        .map_err(ApiError::Internal)?;
+
+    tracing::info!(
+        source_node = %body.source_node,
+        applied = count,
+        "replication events applied"
+    );
+
+    Ok(Json(serde_json::json!({ "applied": count })))
 }
