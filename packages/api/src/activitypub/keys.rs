@@ -52,6 +52,7 @@ pub async fn ensure_keypair(db: &PgPool, user_id: i64) -> Result<String> {
     )
     .bind(&public_pem)
     .bind(&private_pem)
+    .bind(user_id)
     .execute(db)
     .await
     .map_err(|e| {
