@@ -180,9 +180,9 @@
 	<section class="vonk-card mb-4">
 		<h2 class="mb-3 font-display text-lg font-bold text-ink">Externe profielen</h2>
 		<p class="mb-3 text-sm text-muted">
-			Handvatten die je hier invult laten vrienden je vinden via de
-			wizard 'Mensen die je misschien kent'. Wij scrapen niets; we
-			matchen enkel tegen wat andere Vonk-gebruikers zelf opgaven.
+			Gebruikersnamen die je hier invult laten vrienden je vinden via
+			'Mensen die je misschien kent'. Wij scrapen niets; we matchen
+			enkel tegen wat andere Vonk-gebruikers zelf hebben ingevuld.
 		</p>
 		<form method="POST" action="?/saveHandles" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 			{#each [
@@ -258,7 +258,7 @@
 	<section class="vonk-card mb-4">
 		<h2 class="mb-3 font-display text-lg font-bold text-ink">Vrienden</h2>
 		<p class="mb-3 text-sm text-muted">
-			Nodig mensen uit per e-mail of vind bestaande Vonk-vrienden via hun handvatten op andere
+			Nodig mensen uit per e-mail of vind bestaande Vonk-vrienden via hun gebruikersnamen op andere
 			platforms.
 		</p>
 		<a href="/invite">

@@ -277,16 +277,36 @@ would come later if there's demand.
 
 ## Contributing
 
-Pull requests welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Everyone is welcome to contribute. Read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
-**Highest-value contributions right now:**
+### Workflow
 
-- 🔨 Frontend for the backend-ready items (bookmark / repost / pin / author stats UI)
-- 🌍 Native-speaker review of the 13 translated landing locales (fr, de, es, it, pt, pl, sv, da, fi, el, ro, cs, uk) — NL + EN are native-quality, the rest need a look from a native eye
-- 📋 Phase 3 E2EE (MLS protocol implementation in `packages/crypto/`)
-- 🐛 Bug reports + feature suggestions via GitHub Discussions
-- 🔒 Security issues → see [SECURITY.md](SECURITY.md)
-- ♥ [Donate](https://github.com/sponsors/vonk-social) — covers hosting, anything over pays for native reviewers and designers
+1. **Fork** the repository (or create a feature branch if you have write access)
+2. **Branch** off `main` — one feature per branch, use descriptive names (`feat/story-replies`, `fix/avatar-upload-crash`)
+3. **Commit** using [conventional commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, `docs:`)
+4. **Open a Pull Request** against `main` — describe what changed and why
+5. **Get at least 1 approving review** from a maintainer
+6. **Squash-merge** into `main` (this is the standard merge strategy)
+
+### Branch protection
+
+The `main` branch is protected:
+
+- **Direct pushes to `main` are blocked** — all changes go through pull requests
+- **At least 1 approving review** is required before merging
+- **Branches must be up to date** with `main` before merging
+- **Force pushes and branch deletion** are not allowed on `main`
+
+Only maintainers can merge PRs. Repo admins retain emergency push access.
+
+### Highest-value contributions right now
+
+- Frontend for the backend-ready items (bookmark / repost / pin / author stats UI)
+- Native-speaker review of the 13 translated landing locales (fr, de, es, it, pt, pl, sv, da, fi, el, ro, cs, uk) — NL + EN are native-quality, the rest need a look from a native eye
+- Phase 3 E2EE (MLS protocol implementation in `packages/crypto/`)
+- Bug reports + feature suggestions via GitHub Discussions
+- Security issues — see [SECURITY.md](SECURITY.md)
+- [Donate](https://github.com/sponsors/vonk-social) — covers hosting, anything over pays for native reviewers and designers
 
 ## Governance
 

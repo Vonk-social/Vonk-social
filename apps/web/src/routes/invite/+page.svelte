@@ -85,9 +85,9 @@
 	<Card class="mb-6">
 		<h2 class="mb-3 font-display text-lg font-bold text-ink">Vind vrienden via andere platforms</h2>
 		<p class="mb-4 text-sm text-muted">
-			Plak de handvatten van je vrienden op andere platforms. We matchen enkel tegen Vonk-gebruikers
-			die die handvatten zelf op hun profiel hebben gezet. Meerdere tegelijk mag — scheid met spatie
-			of komma.
+			Typ de gebruikersnamen van je vrienden op andere platforms. We matchen enkel tegen Vonk-gebruikers
+			die hun gebruikersnaam zelf op hun profiel hebben ingevuld. Meerdere tegelijk mag — scheid met
+			spatie of komma.
 		</p>
 		<form method="POST" action="?/matchHandles" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 			{#each [
