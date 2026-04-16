@@ -4,6 +4,7 @@
 	import SnapViewer from '$lib/components/snaps/SnapViewer.svelte';
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import { startConversation } from '$lib/api/dm';
+	import { apiFetch } from '$lib/api/core';
 	import { goto } from '$app/navigation';
 	import { toasts } from '$lib/stores/toasts';
 	import type { PageProps } from './$types';
@@ -14,15 +15,35 @@
 	let snapTab = $state<'inbox' | 'sent'>('inbox');
 	let viewingUuid = $state<string | null>(null);
 
-	// New conversation
+	// New conversation with autocomplete
 	let showNewChat = $state(false);
 	let searchQuery = $state('');
 	let starting = $state(false);
+	let suggestions = $state<Array<{uuid: string; username: string; display_name: string; avatar_url?: string | null}>>([]);
+	let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
-	async function openNewChat() {
-		const username = searchQuery.trim().replace(/^@/, '');
-		if (!username) return;
+	function onSearchInput() {
+		const q = searchQuery.trim();
+		if (q.length < 2) {
+			suggestions = [];
+			return;
+		}
+		if (searchTimeout) clearTimeout(searchTimeout);
+		searchTimeout = setTimeout(async () => {
+			try {
+				const res = await apiFetch(`/api/users/search?q=${encodeURIComponent(q)}&limit=6`);
+				if (res.ok) {
+					const body = (await res.json()) as { data: typeof suggestions };
+					suggestions = body.data ?? [];
+				}
+			} catch { /* ignore */ }
+		}, 200);
+	}
+
+	async function pickUser(username: string) {
 		starting = true;
+		suggestions = [];
+		searchQuery = '';
 		try {
 			const { uuid } = await startConversation(username);
 			goto(`/dm/${uuid}`);
@@ -56,20 +77,42 @@
 		</Button>
 	</div>
 
-	<!-- New conversation search -->
+	<!-- New conversation autocomplete -->
 	{#if showNewChat}
 		<div class="vonk-card mb-4">
-			<form onsubmit={(e) => { e.preventDefault(); openNewChat(); }} class="flex gap-2">
+			<p class="mb-2 text-sm text-muted">Zoek iemand om een gesprek te starten:</p>
+			<div class="relative">
 				<input
 					type="text"
 					bind:value={searchQuery}
-					placeholder="Gebruikersnaam van ontvanger…"
-					class="flex-1 rounded-xl border border-border bg-white px-3 py-2 text-ink focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/30"
+					oninput={onSearchInput}
+					placeholder="Typ een naam of gebruikersnaam…"
+					disabled={starting}
+					class="block w-full rounded-xl border border-border bg-white px-3 py-2.5 text-ink focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/30"
 				/>
-				<Button type="submit" disabled={starting || !searchQuery.trim()}>
-					{starting ? '…' : 'Start'}
-				</Button>
-			</form>
+				{#if suggestions.length > 0}
+					<ul class="absolute left-0 right-0 z-10 mt-1 overflow-hidden rounded-xl border border-border bg-white shadow-lg">
+						{#each suggestions as s (s.uuid)}
+							<li>
+								<button
+									type="button"
+									class="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-border/20"
+									onclick={() => pickUser(s.username)}
+								>
+									<Avatar url={s.avatar_url} name={s.display_name} size={36} />
+									<div class="min-w-0">
+										<div class="font-semibold text-ink">{s.display_name}</div>
+										<div class="text-sm text-muted">@{s.username}</div>
+									</div>
+								</button>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+			{#if starting}
+				<p class="mt-2 text-sm text-muted">Gesprek starten…</p>
+			{/if}
 		</div>
 	{/if}
 
