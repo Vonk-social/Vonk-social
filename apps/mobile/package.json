@@ -1,0 +1,24 @@
+{
+	"name": "vonk-mobile",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Capacitor wrapper around the SvelteKit web app for iOS + Android.",
+	"scripts": {
+		"sync": "cap sync",
+		"ios": "cap open ios",
+		"android": "cap open android",
+		"build:web": "cd ../web && npm run build && cd ../mobile && mkdir -p www && cp -r ../web/build/client/* www/",
+		"build": "npm run build:web && cap sync"
+	},
+	"dependencies": {
+		"@capacitor/android": "^6.2.0",
+		"@capacitor/camera": "^6.1.0",
+		"@capacitor/contacts": "^6.1.0",
+		"@capacitor/core": "^6.2.0",
+		"@capacitor/ios": "^6.2.0",
+		"@capacitor/push-notifications": "^6.0.0"
+	},
+	"devDependencies": {
+		"@capacitor/cli": "^6.2.0"
+	}
+}

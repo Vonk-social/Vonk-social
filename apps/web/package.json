@@ -11,7 +11,9 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@fontsource-variable/nunito": "^5.2.0"
+    "@fontsource-variable/nunito": "^5.2.0",
+    "@noble/ciphers": "^2.2.0",
+    "@noble/curves": "^2.2.0"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.2.0",
