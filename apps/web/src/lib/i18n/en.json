@@ -59,9 +59,11 @@
 	"avatar.skip": "Skip for now",
 	"avatar.continue": "Next — find friends",
 
-	"friends.title": "Your first contacts",
-	"friends.help": "On Vonk you follow the people you actually want to follow — never what an algorithm dictates. Full search and 'people you may know' arrive later this summer.",
-	"friends.done": "Let's go",
+	"friends.title": "Invite your friends!",
+	"friends.help": "Vonk is more fun with people you know. Invite them by email, find them by their usernames on other platforms, or discover new Vonk users.",
+	"friends.invite": "Invite friends",
+	"friends.discover": "Discover people",
+	"friends.done": "Do this later",
 
 	"home.welcome": "Welcome, {name}!",
 	"home.empty": "Your feed is empty for now. Phase 2 is on the way: posting, following, stories.",

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
+	import InviteBanner from '$lib/components/InviteBanner.svelte';
 	import ThemeToggle from '$lib/components/ui/ThemeToggle.svelte';
 	import Toast from '$lib/components/ui/Toast.svelte';
 	import VonkLogo from '$lib/components/VonkLogo.svelte';
@@ -58,6 +59,9 @@
 
 	<!-- Stories -->
 	<StoryTray groups={data.stories} onOpen={(g) => (activeStory = g)} />
+
+	<!-- Invite banner — prominent until user has 30+ connections -->
+	<InviteBanner connectionCount={data.connectionCount} username={data.user.username} />
 
 	<!-- Composer -->
 	<section class="mb-6">

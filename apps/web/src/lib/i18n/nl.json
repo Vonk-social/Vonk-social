@@ -59,9 +59,11 @@
 	"avatar.skip": "Later doen",
 	"avatar.continue": "Door naar vrienden",
 
-	"friends.title": "Je eerste contacten",
-	"friends.help": "In Vonk volg je mensen die je wil volgen — nooit wat een algoritme je voorschrijft. Later in de zomer komt de volledige zoek- en 'misschien ken je'-functie online.",
-	"friends.done": "Aan de slag",
+	"friends.title": "Nodig je vrienden uit!",
+	"friends.help": "Vonk is leuker met mensen die je kent. Nodig ze uit per e-mail, zoek ze via hun gebruikersnamen op andere platforms, of ontdek nieuwe Vonk-gebruikers.",
+	"friends.invite": "Vrienden uitnodigen",
+	"friends.discover": "Ontdek mensen",
+	"friends.done": "Later doen",
 
 	"home.welcome": "Welkom, {name}!",
 	"home.empty": "Je feed is nog leeg. Phase 2 is onderweg: posten, volgen, stories.",

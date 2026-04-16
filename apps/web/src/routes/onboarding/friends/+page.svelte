@@ -7,11 +7,26 @@
 	const locale = $derived(data.user?.locale ?? 'nl');
 </script>
 
-<form method="POST" action="?/done" class="vonk-card flex flex-col gap-6">
+<div class="vonk-card flex flex-col gap-6">
 	<h2 class="font-display text-xl font-bold text-ink">{t('friends.title', locale)}</h2>
 	<p class="text-muted">{t('friends.help', locale)}</p>
 
-	<div class="flex justify-end">
-		<Button type="submit">{t('friends.done', locale)} →</Button>
+	<div class="flex flex-col gap-3 sm:flex-row">
+		<a href="/invite" class="flex-1">
+			<Button type="button" fullWidth>
+				✉️ {t('friends.invite', locale)}
+			</Button>
+		</a>
+		<a href="/discover" class="flex-1">
+			<Button type="button" variant="ghost" fullWidth>
+				🔍 {t('friends.discover', locale)}
+			</Button>
+		</a>
 	</div>
-</form>
+
+	<form method="POST" action="?/done">
+		<div class="flex justify-end">
+			<Button type="submit" variant="ghost">{t('friends.done', locale)} →</Button>
+		</div>
+	</form>
+</div>
